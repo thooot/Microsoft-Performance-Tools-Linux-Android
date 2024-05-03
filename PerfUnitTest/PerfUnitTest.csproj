@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PerfDataExtensions\PerfDataExtensions.csproj">
+    <ProjectReference Include="..\PerfDataTxtExtension\PerfDataTxtExtension.csproj">
       <CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
       <Private>true</Private>
       <IncludeAssets>compile</IncludeAssets>

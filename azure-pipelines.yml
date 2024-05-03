@@ -75,8 +75,7 @@ extends:
               LTTngDataExtensions\LTTngDataExtensions.csproj
               LTTngDataExtUnitTest\LTTngDataExtUnitTest.csproj
               LTTngDriver\LTTngDriver.csproj
-              PerfCds\PerfCds.csproj
-              PerfDataExtensions\PerfDataExtensions.csproj
+              PerfDataTxtExtension\PerfDataTxtExtension.csproj
               PerfettoCds\PerfettoCds.csproj
               PerfUnitTest\PerfUnitTest.csproj
               LinuxLogParsers\LinuxPlugins-MicrosoftPerformanceToolkSDK\Cloud-init\Cloud-Init.csproj
@@ -95,11 +94,11 @@ extends:
             projects: '$(System.DefaultWorkingDirectory)/Microsoft-Perf-Tools-Linux-Android.sln'
         
         - task: CopyFiles@2
-          displayName: Copy PerfDataExtensions Build to Output Artifacts
+          displayName: Copy PerfDataTxtExtension Build to Output Artifacts
           inputs:
-            SourceFolder: 'PerfDataExtensions/bin/$(BuildConfiguration)/netstandard2.1'
+            SourceFolder: 'PerfDataTxtExtension/bin/$(BuildConfiguration)/netstandard2.1'
             Contents: '**'
-            TargetFolder: '$(Build.ArtifactStagingDirectory)/Microsoft-Performance-Tools-Linux/MicrosoftPerfToolkitAddins/PerfDataExtensions'
+            TargetFolder: '$(Build.ArtifactStagingDirectory)/Microsoft-Performance-Tools-Linux/MicrosoftPerfToolkitAddins/PerfDataTxtExtension'
             
         - task: CopyFiles@2
           displayName: Copy LTTngDataExtensions Build to Output Artifacts

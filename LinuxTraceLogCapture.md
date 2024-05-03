@@ -154,23 +154,6 @@ $ sudo perf report --header-only -i perf_cpu.data | grep "captured on"
 
 Place the "captured on" timestamp for example "Thu Oct 17 15:37:36 2019" in a timestamp.txt file next to the trace folder. The timestamp will be interpreted as UTC
 
-### Convert to CTF (Optional) (requires CTF enabled perf) 
-We have optional support for perf CTF conversion. It it currently NOT RECOMMENDED to use this though as you get less features (like KM/UM stacks) than perf.data.txt support which resolves callstacks on the box.
-This only supports KM symbols (for now) supplied by kallsyms. Microsoft-Linux-Perf-Tools support for the perf CTF trace is experimental given lack of UM symbols
-
-```bash
-$ perf data convert -i perf_cpu.data --all --to-ctf ./perf_cpu.data-ctf
-```
-
-You will need the perf file in converted CTF format which you can do with a custom compiled perf (unless some distro compiled the support in). [Custom build instructions here](https://stackoverflow.com/questions/43576997/building-perf-with-babeltrace-for-perf-to-ctf-conversion)
-
-## Save Kernel Symbols (Optional) (for use with CTF enabled perf)
-This is only needed for a perf CTF trace
-
-```bash
-$ sudo cat /proc/kallsyms > kallsyms
-```
-
 # Transferring the files to Windows UI (optional)
 You then need to transfer the perf files to a Windows box where WPA runs. The most important file is perf.data.txt
 
@@ -180,12 +163,10 @@ $ sudo chmod 777 -R perf*
 
 - Copy files from Linux to Windows box with WinSCP/SCP OR 
 ```bash
-$ tar -czvf perf_cpu-ctf.tar.gz perf*
+$ tar -czvf perf_cpu.tar.gz perf*
 ```
 - (Optional if you want absolute timestamps) Place timestamp.txt next to perf.data.txt
 - Open perf.data.txt with WPA
-- For the perf CTF file (optional) On Windows, Zip the folder up and rename to .ctf extension. E.g. perf_cpu-ctf.ctf (which is really a .zip file)
-  - CTF (Optional) Kallsyms needs to be on your Desktop
 
 
 # Presentations
