@@ -43,7 +43,8 @@ namespace Microsoft.Performance.Toolkit.Plugins.PerfDataExtension
         public override SourceDataCookerOptions Options => SourceDataCookerOptions.ReceiveAllDataElements;
 
         [DataOutput]
-        public ProcessedEventData<ValueTuple<PerfDataEvent, PerfDataFileInfo>> Events { get; } = new ProcessedEventData<ValueTuple<PerfDataEvent, PerfDataFileInfo>>();
+        public ProcessedEventData<ValueTuple<PerfDataEvent, PerfDataFileInfo>> Events { get; } =
+            new ProcessedEventData<ValueTuple<PerfDataEvent, PerfDataFileInfo>>();
 
         [DataOutput]
         public long SessionTimestampOffset { get; private set; } = long.MinValue;
@@ -68,9 +69,7 @@ namespace Microsoft.Performance.Toolkit.Plugins.PerfDataExtension
         public override void EndDataCooking(CancellationToken cancellationToken)
         {
             this.Events.FinalizeData();
-            this.SessionTimestampOffset = this.lastContext != null
-                ? this.lastContext.SessionTimestampOffset
-                : 0;
+            this.SessionTimestampOffset = this.lastContext == null ? 0 : this.lastContext.SessionTimestampOffset;
         }
     }
 }

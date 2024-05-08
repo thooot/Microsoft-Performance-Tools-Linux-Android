@@ -8,7 +8,7 @@
 
 > Tracing supported: 
 - [LTTng](https://lttng.org) (Kernel CPU scheduling, Processes, Threads, Block IO/Disk, Syscalls, File events, etc)
-- [perf](https://perf.wiki.kernel.org/) CPU Sampling(cpu-clock)
+- [perf](https://perf.wiki.kernel.org/) (Generic events)
 - [Perfetto](https://perfetto.dev/) Android & Chromium (CPU Scheduling, CPU Sampling, CPU Frequency, FTrace, Android Logs, Generic Events / Default Tracks, GPU Counters, Jank Detection, Processes, Android Packages)
 
 > Logs supported: 
@@ -57,7 +57,7 @@ The tools can be run in several modes:
   - Used as a library to process traces / logs programatically in a .NET Core language like C#
     - Examples: 
     - [LTTng 1](LTTngDriver/Program.cs), [LTTng 2](LTTngDataExtUnitTest/LTTngUnitTest.cs)
-    - [Perf](PerfUnitTest/PerfUnitTest.cs)
+    - [Perf](PerfDataUnitTest/PerfDataUnitTest.cs)
     - [LinuxLogs](LinuxLogParsers/LinuxLogParsersUnitTest/LinuxLogParsersUnitTest.cs)
     - [Perfetto](PerfettoUnitTest/PerfettoUnitTest.cs)
   - With a driver program for example dumping to screen or text format
@@ -113,7 +113,7 @@ The tools can be run in several modes:
 - Unified (LTTng, Perfetto, or other multiple different logs files together)
   - Once you gather the data, there is a tiny bit of prep needed to open them in a single unified timeline (like the screenshot above)
   - If you want to open multiple logs together in single timeline - Copy all trace files and logs you want to open to single folder
-  - Example: You want to open in the same timeline: LTTng, Perf CPU Sampling, Dmesg
+  - Example: You want to open in the same timeline: LTTng, Perf, Dmesg
     - Ensure that the Linux CTF folder/trace is zipped and renamed to .ctf in the same folder (hack so open Unified works)
   - WPA -> File -> Open -> Multi-select all files and choose "Open Unified"
 

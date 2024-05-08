@@ -5,7 +5,7 @@ This provides a quick start on how to capture logs on Linux.
 Logs:
 
 - [LTTng](https://lttng.org) system trace (requires customized image for boot scenario)
-- Perf CPU Sampling
+- [perf](https://perf.wiki.kernel.org/)
 - [cloud-init.log](https://cloud-init.io/)
   - Automatically logged by cloud-init to /var/log/cloud-init.log
 - [dmesg.iso.log](https://en.wikipedia.org/wiki/Dmesg)
@@ -98,9 +98,9 @@ $ sudo lttng destroy
 ```
 
 # Perf
-Perf is used to collect CPU Sampling (cpu-clock) events as LTTng doesn't support capturing these yet. Note: Stacks may require symbol setup
+Perf is used to collect tracepoint events.
 
-[perf](https://perf.wiki.kernel.org/) CPU Sampling(cpu-clock)
+[perf](https://perf.wiki.kernel.org/)
 
 If you want to trace .NET Core then you need [perfcollect](http://aka.ms/perfcollect) which capture CPU sampling and more
 
@@ -108,11 +108,6 @@ If you want to trace .NET Core then you need [perfcollect](http://aka.ms/perfcol
 ```bash
 $ sudo apt-get install linux-tools-common
 ```
-
-## User-Mode (UM) Symbols Install
-KM symbols are automatically resolved. If you wish to resolve UM cpu sample functions and stacks, you may need to install debug packages for the binary you are profiling
-
-For example, [Debug Symbol Packages on Ubuntu](https://wiki.ubuntu.com/Debug%20Symbol%20Packages)
 
 ## Record a trace
 ```bash
@@ -124,50 +119,19 @@ $ sudo /usr/bin/perf record -g -a -F 999 -e cpu-clock,sched:sched_stat_sleep,sch
 $ Ctrl-C
 ```
 
-## Convert trace to text format
-This is to useful along-side the CTF trace to resolve UM IP/Symbols. Similar to what [perfcollect](https://raw.githubusercontent.com/microsoft/perfview/master/src/perfcollect/perfcollect) uses
-
-```bash
-$ sudo perf inject -v -s -i perf_cpu.data -o perf.data.merged
-
-# There is a breaking change where the capitalization of the -f parameter changed.
-$ sudo perf script -i perf.data.merged -F comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > perf.data.txt
-
-if [ $? -ne 0 ]
-then
-    $ sudo perf script -i perf.data.merged -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > perf.data.txt
-fi
-
-# If the dump file is zero length, try to collect without the period field, which was added recently.
-if [ ! -s perf.data.txt ]
-then
-    $ sudo perf script -i perf.data.merged -f comm,pid,tid,cpu,time,event,ip,sym,dso,trace > perf.data.txt
-fi
-```
-
-## Capture trace timestamp start 
-Perf.data.txt only contains relative timestamps. If you want correct absolute timestamps in UI then you will need to know the trace start time.
-
-```bash
-$ sudo perf report --header-only -i perf_cpu.data | grep "captured on"
-```
-
-Place the "captured on" timestamp for example "Thu Oct 17 15:37:36 2019" in a timestamp.txt file next to the trace folder. The timestamp will be interpreted as UTC
-
 # Transferring the files to Windows UI (optional)
 You then need to transfer the perf files to a Windows box where WPA runs. The most important file is perf.data.txt
 
 ```bash
-$ sudo chmod 777 -R perf*
+$ sudo chmod 777 -R perf_cpu.data
 ```
 
 - Copy files from Linux to Windows box with WinSCP/SCP OR 
 ```bash
-$ tar -czvf perf_cpu.tar.gz perf*
+$ tar -czvf perf_cpu.tar.gz perf_cpu.data
 ```
-- (Optional if you want absolute timestamps) Place timestamp.txt next to perf.data.txt
-- Open perf.data.txt with WPA
 
+- Open perf_cpu.data with WPA
 
 # Presentations
 
