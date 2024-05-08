@@ -97,10 +97,46 @@ $ sudo lttng stop
 $ sudo lttng destroy
 ```
 
-# Perf
-Perf is used to collect tracepoint events.
+# Perf.data
 
-[perf](https://perf.wiki.kernel.org/)
+You can collect and view Linux [kernel-mode](https://www.kernel.org/doc/html/latest/trace/tracepoints.html) and [user-mode](https://docs.kernel.org/trace/user_events.html) tracepoints in the `perf.data` file format.
+
+- Select existing tracepoints that you want to collect, or write your own programs that generate tracepoint events.
+- Use the Linux `perf` tool or some other tool to collect tracepoint events into `perf.data` files.
+- Use the PerfData extension to view the tracepoints.
+
+## Selecting tracepoints
+
+The Linux kernel and the kernel modules generate many useful tracepoints that you can collect. Look in `/sys/kernel/tracing/events` for the tracepoints that are available to you.
+
+In addition, Linux 6.4 adds support for generating
+[user_events](https://docs.kernel.org/trace/user_events.html)
+tracepoints from user-mode programs.
+
+- [LinuxTracepoints](https://github.com/microsoft/LinuxTracepoints) contains support for generating `user_events` from C/C++ programs.
+- [LinuxTracepoints-Rust](https://github.com/microsoft/LinuxTracepoints-Rust) contains support for generating `user_events` from Rust programs.
+
+## Collecting tracepoints
+
+The Linux [perf](https://perf.wiki.kernel.org/) tool supports collecting tracepoint events using `perf record`.
+
+- Install `perf` from the `linux-perf` or `linux-tools` package.
+  - Note that some `perf` packages use a wrapper script to help you match the running kernel version with a version-specific build of the `perf` tool, e.g. `perf_VERSION`. For collecting tracepoints, the version doesn't need to match. If you have version mismatch problems, you can safely bypass the wrapper script and directly use the `perf_VERSION` tool.
+- Install the `libtraceevent1` package to enable `perf` support for tracepoints.
+- Use [perf record](https://www.man7.org/linux/man-pages/man1/perf-record.1.html) to collect traces, e.g. `perf record -o MyFile.perf.data -k monotonic -e "event1_group:event1_name,event2_group:event2_name"`
+  - Use `-k monotonic` to include clock offset information in the data file.
+
+You can also use other tools that generate `perf.data`-compatible files.
+
+- [libtracepoint-control](https://github.com/microsoft/LinuxTracepoints/tree/main/libtracepoint-control-cpp) includes a library for configuring tracepoint collection sessions and collecting `perf.data` files.
+- [tracepoint-collect](https://github.com/microsoft/LinuxTracepoints/blob/main/libtracepoint-control-cpp/tools/tracepoint-collect.cpp) is a simple tool that collects tracepoint events into `perf.data` files.
+
+# Perf.data.txt
+Perf is used to collect CPU Sampling (cpu-clock) events as LTTng doesn't support capturing these yet. Note: Stacks may require symbol setup.
+
+The perf CPU Sampling analysis plugin uses perf.data.txt files as input.
+
+[perf](https://perf.wiki.kernel.org/) CPU Sampling(cpu-clock)
 
 If you want to trace .NET Core then you need [perfcollect](http://aka.ms/perfcollect) which capture CPU sampling and more
 
@@ -108,6 +144,11 @@ If you want to trace .NET Core then you need [perfcollect](http://aka.ms/perfcol
 ```bash
 $ sudo apt-get install linux-tools-common
 ```
+
+## User-Mode (UM) Symbols Install
+KM symbols are automatically resolved. If you wish to resolve UM cpu sample functions and stacks, you may need to install debug packages for the binary you are profiling
+
+For example, [Debug Symbol Packages on Ubuntu](https://wiki.ubuntu.com/Debug%20Symbol%20Packages)
 
 ## Record a trace
 ```bash
@@ -119,19 +160,50 @@ $ sudo /usr/bin/perf record -g -a -F 999 -e cpu-clock,sched:sched_stat_sleep,sch
 $ Ctrl-C
 ```
 
+## Convert trace to text format
+This is to useful along-side the CTF trace to resolve UM IP/Symbols. Similar to what [perfcollect](https://raw.githubusercontent.com/microsoft/perfview/master/src/perfcollect/perfcollect) uses
+
+```bash
+$ sudo perf inject -v -s -i perf_cpu.data -o perf.data.merged
+
+# There is a breaking change where the capitalization of the -f parameter changed.
+$ sudo perf script -i perf.data.merged -F comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > perf.data.txt
+
+if [ $? -ne 0 ]
+then
+    $ sudo perf script -i perf.data.merged -f comm,pid,tid,cpu,time,period,event,ip,sym,dso,trace > perf.data.txt
+fi
+
+# If the dump file is zero length, try to collect without the period field, which was added recently.
+if [ ! -s perf.data.txt ]
+then
+    $ sudo perf script -i perf.data.merged -f comm,pid,tid,cpu,time,event,ip,sym,dso,trace > perf.data.txt
+fi
+```
+
+## Capture trace timestamp start 
+Perf.data.txt only contains relative timestamps. If you want correct absolute timestamps in UI then you will need to know the trace start time.
+
+```bash
+$ sudo perf report --header-only -i perf_cpu.data | grep "captured on"
+```
+
+Place the "captured on" timestamp for example "Thu Oct 17 15:37:36 2019" in a timestamp.txt file next to the trace folder. The timestamp will be interpreted as UTC
+
 # Transferring the files to Windows UI (optional)
 You then need to transfer the perf files to a Windows box where WPA runs. The most important file is perf.data.txt
 
 ```bash
-$ sudo chmod 777 -R perf_cpu.data
+$ sudo chmod 777 -R perf*
 ```
 
 - Copy files from Linux to Windows box with WinSCP/SCP OR 
 ```bash
-$ tar -czvf perf_cpu.tar.gz perf_cpu.data
+$ tar -czvf perf_cpu.tar.gz perf*
 ```
+- (Optional if you want absolute timestamps) Place timestamp.txt next to perf.data.txt
+- Open perf.data.txt with WPA
 
-- Open perf_cpu.data with WPA
 
 # Presentations
 
