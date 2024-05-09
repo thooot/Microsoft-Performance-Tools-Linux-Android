@@ -75,6 +75,8 @@ extends:
               LTTngDataExtensions\LTTngDataExtensions.csproj
               LTTngDataExtUnitTest\LTTngDataExtUnitTest.csproj
               LTTngDriver\LTTngDriver.csproj
+              PerfDataExtension\PerfDataExtension.csproj
+              PerfDataUnitTest\PerfDataUnitTest.csproj
               PerfDataTxtExtension\PerfDataTxtExtension.csproj
               PerfettoCds\PerfettoCds.csproj
               PerfUnitTest\PerfUnitTest.csproj
@@ -92,7 +94,14 @@ extends:
           inputs:
             command: 'test'
             projects: '$(System.DefaultWorkingDirectory)/Microsoft-Perf-Tools-Linux-Android.sln'
-        
+
+        - task: CopyFiles@2
+          displayName: Copy PerfDataExtension Build to Output Artifacts
+          inputs:
+            SourceFolder: 'PerfDataExtension/bin/$(BuildConfiguration)/netstandard2.1'
+            Contents: '**'
+            TargetFolder: '$(Build.ArtifactStagingDirectory)/Microsoft-Performance-Tools-Linux/MicrosoftPerfToolkitAddins/PerfDataExtension'
+
         - task: CopyFiles@2
           displayName: Copy PerfDataTxtExtension Build to Output Artifacts
           inputs:

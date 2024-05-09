@@ -5,7 +5,7 @@ This provides a quick start on how to capture logs on Linux.
 Logs:
 
 - [LTTng](https://lttng.org) system trace (requires customized image for boot scenario)
-- Perf CPU Sampling
+- [perf](https://perf.wiki.kernel.org/)
 - [cloud-init.log](https://cloud-init.io/)
   - Automatically logged by cloud-init to /var/log/cloud-init.log
 - [dmesg.iso.log](https://en.wikipedia.org/wiki/Dmesg)
@@ -97,8 +97,44 @@ $ sudo lttng stop
 $ sudo lttng destroy
 ```
 
-# Perf
-Perf is used to collect CPU Sampling (cpu-clock) events as LTTng doesn't support capturing these yet. Note: Stacks may require symbol setup
+# Perf.data
+
+You can collect and view Linux [kernel-mode](https://www.kernel.org/doc/html/latest/trace/tracepoints.html) and [user-mode](https://docs.kernel.org/trace/user_events.html) tracepoints in the `perf.data` file format.
+
+- Select existing tracepoints that you want to collect, or write your own programs that generate tracepoint events.
+- Use the Linux `perf` tool or some other tool to collect tracepoint events into `perf.data` files.
+- Use the PerfData extension to view the tracepoints.
+
+## Selecting tracepoints
+
+The Linux kernel and the kernel modules generate many useful tracepoints that you can collect. Look in `/sys/kernel/tracing/events` for the tracepoints that are available to you.
+
+In addition, Linux 6.4 adds support for generating
+[user_events](https://docs.kernel.org/trace/user_events.html)
+tracepoints from user-mode programs.
+
+- [LinuxTracepoints](https://github.com/microsoft/LinuxTracepoints) contains support for generating `user_events` from C/C++ programs.
+- [LinuxTracepoints-Rust](https://github.com/microsoft/LinuxTracepoints-Rust) contains support for generating `user_events` from Rust programs.
+
+## Collecting tracepoints
+
+The Linux [perf](https://perf.wiki.kernel.org/) tool supports collecting tracepoint events using `perf record`.
+
+- Install `perf` from the `linux-perf` or `linux-tools` package.
+  - Note that some `perf` packages use a wrapper script to help you match the running kernel version with a version-specific build of the `perf` tool, e.g. `perf_VERSION`. For collecting tracepoints, the version doesn't need to match. If you have version mismatch problems, you can safely bypass the wrapper script and directly use the `perf_VERSION` tool.
+- Install the `libtraceevent1` package to enable `perf` support for tracepoints.
+- Use [perf record](https://www.man7.org/linux/man-pages/man1/perf-record.1.html) to collect traces, e.g. `perf record -o MyFile.perf.data -k monotonic -e "event1_group:event1_name,event2_group:event2_name"`
+  - Use `-k monotonic` to include clock offset information in the data file.
+
+You can also use other tools that generate `perf.data`-compatible files.
+
+- [libtracepoint-control](https://github.com/microsoft/LinuxTracepoints/tree/main/libtracepoint-control-cpp) includes a library for configuring tracepoint collection sessions and collecting `perf.data` files.
+- [tracepoint-collect](https://github.com/microsoft/LinuxTracepoints/blob/main/libtracepoint-control-cpp/tools/tracepoint-collect.cpp) is a simple tool that collects tracepoint events into `perf.data` files.
+
+# Perf.data.txt
+Perf is used to collect CPU Sampling (cpu-clock) events as LTTng doesn't support capturing these yet. Note: Stacks may require symbol setup.
+
+The perf CPU Sampling analysis plugin uses perf.data.txt files as input.
 
 [perf](https://perf.wiki.kernel.org/) CPU Sampling(cpu-clock)
 

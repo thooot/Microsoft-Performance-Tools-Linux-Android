@@ -8,7 +8,7 @@
 
 > Tracing supported: 
 - [LTTng](https://lttng.org) (Kernel CPU scheduling, Processes, Threads, Block IO/Disk, Syscalls, File events, etc)
-- [perf](https://perf.wiki.kernel.org/) CPU Sampling(cpu-clock)
+- [perf](https://perf.wiki.kernel.org/) Generic Events, CPU Sampling (cpu-clock)
 - [Perfetto](https://perfetto.dev/) Android & Chromium (CPU Scheduling, CPU Sampling, CPU Frequency, FTrace, Android Logs, Generic Events / Default Tracks, GPU Counters, Jank Detection, Processes, Android Packages)
 
 > Logs supported: 
@@ -57,7 +57,8 @@ The tools can be run in several modes:
   - Used as a library to process traces / logs programatically in a .NET Core language like C#
     - Examples: 
     - [LTTng 1](LTTngDriver/Program.cs), [LTTng 2](LTTngDataExtUnitTest/LTTngUnitTest.cs)
-    - [Perf](PerfUnitTest/PerfUnitTest.cs)
+    - [Perf.data.txt](PerfUnitTest/PerfUnitTest.cs) (CPU Sampling analysis)
+    - [Perf.data](PerfDataUnitTest/PerfDataUnitTest.cs) (Generic events)
     - [LinuxLogs](LinuxLogParsers/LinuxLogParsersUnitTest/LinuxLogParsersUnitTest.cs)
     - [Perfetto](PerfettoUnitTest/PerfettoUnitTest.cs)
   - With a driver program for example dumping to screen or text format
