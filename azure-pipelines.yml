@@ -17,7 +17,7 @@ variables:
   buildPlatform: 'Any CPU'
   buildConfiguration: 'Release'
 # The version of dotnet core to use.
-  Build.DotNetCoreVersion: 3.x
+  Build.DotNetCoreVersion: 8.x
 
 resources:
   repositories:
@@ -119,7 +119,7 @@ extends:
         - task: CopyFiles@2
           displayName: Copy LTTngDriver Build to Output Artifacts
           inputs:
-            SourceFolder: 'LTTngDriver/bin/$(BuildConfiguration)/netcoreapp3.1'
+            SourceFolder: 'LTTngDriver/bin/$(BuildConfiguration)/netcoreapp8.0'
             Contents: '**'
             TargetFolder: '$(Build.ArtifactStagingDirectory)/Microsoft-Performance-Tools-Linux/LTTngDriver'
     
