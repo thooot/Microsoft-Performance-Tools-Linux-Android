@@ -59,6 +59,10 @@
     </Compile>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Utilities\Utilities.csproj" />
+  </ItemGroup>
+
   <Target Name="CopyToTargetDirTarget" AfterTargets="Build">
     <Copy SourceFiles="@(CopyToTargetDir)" DestinationFolder="$(TargetDir)" />
   </Target>

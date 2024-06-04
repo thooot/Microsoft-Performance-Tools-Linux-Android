@@ -33,6 +33,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CtfPlayback\CtfPlayback.csproj" />
+    <ProjectReference Include="..\Utilities\Utilities.csproj" />
   </ItemGroup>
 
 </Project>
