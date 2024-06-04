@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
 
+using Utilities;
+
 namespace Microsoft.Performance.Toolkit.Plugins.PerfDataExtension
 {
     using Microsoft.LinuxTracepoints.Decode;
@@ -21,13 +23,14 @@ namespace Microsoft.Performance.Toolkit.Plugins.PerfDataExtension
     {
         public override ProcessingSourceInfo GetAboutInfo()
         {
-            return new ProcessingSourceInfo
-            {
-                CopyrightNotice = "Copyright (c) Microsoft Corporation. All rights reserved.",
-                LicenseInfo = new LicenseInfo { Name = "MIT" },
-                Owners = Array.Empty<ContactInfo>(),
-                ProjectInfo = new ProjectInfo { Uri = "https://github.com/microsoft/LinuxTracepoints-Net" },
-            };
+            var info = ProcessingSourceInfoGenerator.GetEmpty();
+
+            info.CopyrightNotice = "Copyright (c) Microsoft Corporation. All rights reserved.";
+            info.LicenseInfo = new LicenseInfo { Name = "MIT" };
+            info.Owners = Array.Empty<ContactInfo>();
+            info.ProjectInfo = new ProjectInfo { Uri = "https://github.com/microsoft/LinuxTracepoints-Net" };
+
+            return info;
         }
 
         protected override bool IsDataSourceSupportedCore(IDataSource dataSource)

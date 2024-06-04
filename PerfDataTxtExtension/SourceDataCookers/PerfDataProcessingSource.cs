@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.Performance.SDK.Processing;
+using Utilities;
 
 namespace PerfDataProcessingSource
 {
@@ -44,10 +45,9 @@ namespace PerfDataProcessingSource
 
         public override ProcessingSourceInfo GetAboutInfo()
         {
-            return new ProcessingSourceInfo()
-            {
-                ProjectInfo = new ProjectInfo() { Uri = "https://aka.ms/linuxperftools" },
-            };
+            var info = ProcessingSourceInfoGenerator.GetEmpty();
+            info.ProjectInfo = new ProjectInfo() { Uri = "https://aka.ms/linuxperftools" };
+            return info;
         }
 
         protected override void SetApplicationEnvironmentCore(IApplicationEnvironment applicationEnvironment)

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.Performance.SDK.Processing;
+using Utilities;
 
 namespace PerfettoCds
 {
@@ -47,12 +48,13 @@ namespace PerfettoCds
 
         public override ProcessingSourceInfo GetAboutInfo()
         {
-            return new ProcessingSourceInfo()
-            {
-                ProjectInfo = new ProjectInfo() { Uri = "https://aka.ms/linuxperftools" },
-                CopyrightNotice = "Copyright (C) " + DateTime.UtcNow.Year,
-                AdditionalInformation = PerfettoCds.PerfettoCopyrightLicense,
-            };
+            var info = ProcessingSourceInfoGenerator.GetEmpty();
+
+            info.ProjectInfo = new ProjectInfo() { Uri = "https://aka.ms/linuxperftools" };
+            info.CopyrightNotice = "Copyright (C) " + DateTime.UtcNow.Year;
+            info.AdditionalInformation = PerfettoCds.PerfettoCopyrightLicense;
+
+            return info;
         }
 
         protected override bool IsDataSourceSupportedCore(IDataSource dataSource)
@@ -91,12 +93,13 @@ namespace PerfettoCds
 
         public override ProcessingSourceInfo GetAboutInfo()
         {
-            return new ProcessingSourceInfo()
-            {
-                ProjectInfo = new ProjectInfo() { Uri = "https://aka.ms/linuxperftools" },
-                CopyrightNotice = "Copyright (C) " + DateTime.UtcNow.Year,
-                AdditionalInformation = PerfettoCds.PerfettoCopyrightLicense,
-            };
+            var info = ProcessingSourceInfoGenerator.GetEmpty();
+
+            info.ProjectInfo = new ProjectInfo() { Uri = "https://aka.ms/linuxperftools" };
+            info.CopyrightNotice = "Copyright (C) " + DateTime.UtcNow.Year;
+            info.AdditionalInformation = PerfettoCds.PerfettoCopyrightLicense;
+
+            return info;
         }
 
         protected override bool IsDataSourceSupportedCore(IDataSource dataSource)
@@ -135,12 +138,13 @@ namespace PerfettoCds
 
         public override ProcessingSourceInfo GetAboutInfo()
         {
-            return new ProcessingSourceInfo()
-            {
-                ProjectInfo = new ProjectInfo() { Uri = "https://aka.ms/linuxperftools" },
-                CopyrightNotice = "Copyright (C) " + DateTime.UtcNow.Year,
-                AdditionalInformation = PerfettoCds.PerfettoCopyrightLicense,
-            };
+            var info = ProcessingSourceInfoGenerator.GetEmpty();
+
+            info.ProjectInfo = new ProjectInfo() { Uri = "https://aka.ms/linuxperftools" };
+            info.CopyrightNotice = "Copyright (C) " + DateTime.UtcNow.Year;
+            info.AdditionalInformation = PerfettoCds.PerfettoCopyrightLicense;
+
+            return info;
         }
 
         protected override bool IsDataSourceSupportedCore(IDataSource dataSource)
@@ -179,12 +183,13 @@ namespace PerfettoCds
 
         public override ProcessingSourceInfo GetAboutInfo()
         {
-            return new ProcessingSourceInfo()
-            {
-                ProjectInfo = new ProjectInfo() { Uri = "https://aka.ms/linuxperftools" },
-                CopyrightNotice = "Copyright (C) " + DateTime.UtcNow.Year,
-                AdditionalInformation = PerfettoCds.PerfettoCopyrightLicense,
-            };
+            var info = ProcessingSourceInfoGenerator.GetEmpty();
+
+            info.ProjectInfo = new ProjectInfo() { Uri = "https://aka.ms/linuxperftools" };
+            info.CopyrightNotice = "Copyright (C) " + DateTime.UtcNow.Year;
+            info.AdditionalInformation = PerfettoCds.PerfettoCopyrightLicense;
+
+            return info;
         }
 
         protected override bool IsDataSourceSupportedCore(IDataSource dataSource)
