@@ -20,7 +20,9 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v2
       with:
-        dotnet-version: '8.x'
+        dotnet-version: |
+          '6.x'
+          '8.x'
 
     - name: Restore dependencies
       run: dotnet restore Microsoft-Perf-Tools-Linux-Android.sln
