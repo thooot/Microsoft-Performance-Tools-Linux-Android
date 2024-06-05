@@ -42,7 +42,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Performance.SDK" Version="1.1.24" />
+    <PackageReference Include="Microsoft.Performance.SDK" Version="1.0.27" />
 
     <PackageReference Include="Microsoft.LinuxTracepoints.Types" Version="0.1.2.*" PrivateAssets="all" GeneratePathProperty="true" />
     <CopyToTargetDir Include="$(PkgMicrosoft_LinuxTracepoints_Types)\lib\netstandard2.1\Microsoft.LinuxTracepoints.Types.dll" />
