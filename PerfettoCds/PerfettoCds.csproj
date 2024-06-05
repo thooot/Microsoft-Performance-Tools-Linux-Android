@@ -24,7 +24,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PerfettoProcessor\PerfettoProcessor.csproj" />
-    <ProjectReference Include="..\Utilities\Utilities.csproj" />
   </ItemGroup>
 
   <Target Name="DownloadTraceProcessorShell">
@@ -62,4 +61,6 @@
     <!-- Download trace_processor_shell to the output directory if it doesn't exist -->
     <CallTarget Condition="!Exists('$(TargetDir)\trace_processor_shell.exe')" Targets="DownloadTraceProcessorShell" />
   </Target>
+
+  <Import Project="..\Utilities\Utilities.projitems" Label="Shared" />
 </Project>

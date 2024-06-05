@@ -51,8 +51,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfettoProcessor", "Perfet
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfettoUnitTest", "PerfettoUnitTest\PerfettoUnitTest.csproj", "{CF89184C-8CE8-4656-9C5C-3F6C547EF2A3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Utilities", "Utilities\Utilities.csproj", "{0BA62F1B-1456-48FD-B2DE-C9FE1CB94B8B}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Launcher", "Launcher", "{6A9515FC-D4B2-4221-8E74-78E7AFF0E421}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Windows", "Windows", "{DB7FCF02-C949-4545-B58C-F514E85AB1FA}"
@@ -76,6 +74,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfDataExtension", "PerfDataExtension\PerfDataExtension.csproj", "{02B6DB71-E796-4AFE-9E18-334E2F803393}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfDataUnitTest", "PerfDataUnitTest\PerfDataUnitTest.csproj", "{B57A38CD-9641-476C-A2FB-DF24D1700F41}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Utilities", "Utilities\Utilities.shproj", "{B0F4D7F4-B11C-41B8-96F5-2414174C3E7D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -155,10 +155,6 @@ Global
 		{CF89184C-8CE8-4656-9C5C-3F6C547EF2A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CF89184C-8CE8-4656-9C5C-3F6C547EF2A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CF89184C-8CE8-4656-9C5C-3F6C547EF2A3}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0BA62F1B-1456-48FD-B2DE-C9FE1CB94B8B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0BA62F1B-1456-48FD-B2DE-C9FE1CB94B8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0BA62F1B-1456-48FD-B2DE-C9FE1CB94B8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0BA62F1B-1456-48FD-B2DE-C9FE1CB94B8B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9FD0BECC-AC5E-46A8-9749-46CD82BA89DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9FD0BECC-AC5E-46A8-9749-46CD82BA89DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9FD0BECC-AC5E-46A8-9749-46CD82BA89DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -198,5 +194,15 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E96603EA-8E1D-4AA9-A474-D267A116C316}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		Utilities\Utilities.projitems*{02b6db71-e796-4afe-9e18-334e2f803393}*SharedItemsImports = 5
+		Utilities\Utilities.projitems*{03dbb240-c4dd-4ff4-9405-f50cbf0a960d}*SharedItemsImports = 5
+		Utilities\Utilities.projitems*{83418d84-cace-40e8-a0c3-8eeaf7e71969}*SharedItemsImports = 5
+		Utilities\Utilities.projitems*{8ee62907-1246-48fa-9ad5-d1dfec7f26f8}*SharedItemsImports = 5
+		Utilities\Utilities.projitems*{90fe5422-631f-4b5a-8ef7-88fe542739df}*SharedItemsImports = 5
+		Utilities\Utilities.projitems*{b0f4d7f4-b11c-41b8-96f5-2414174c3e7d}*SharedItemsImports = 13
+		Utilities\Utilities.projitems*{b381f72e-335c-4842-9db2-615d5c18a943}*SharedItemsImports = 5
+		Utilities\Utilities.projitems*{e4eb869c-dbf9-4c7f-95ba-6d28dbc69fd0}*SharedItemsImports = 5
 	EndGlobalSection
 EndGlobal

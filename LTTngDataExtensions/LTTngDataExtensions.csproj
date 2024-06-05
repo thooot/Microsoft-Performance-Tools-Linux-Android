@@ -68,7 +68,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LTTngCds\LTTngCds.csproj" />
-    <ProjectReference Include="..\Utilities\Utilities.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -85,5 +84,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <Import Project="..\Utilities\Utilities.projitems" Label="Shared" />
 
 </Project>

@@ -22,14 +22,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Utilities\Utilities.csproj" />
+    <PackageReference Include="Microsoft.Performance.SDK" Version="1.0.27" />
   </ItemGroup>
-
+	
   <ItemGroup>
     <None Include="..\LICENSE.txt">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
   </ItemGroup>
+
+  <Import Project="..\Utilities\Utilities.projitems" Label="Shared" />
 
 </Project>

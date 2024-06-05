@@ -20,7 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Utilities\Utilities.csproj" />
     <ProjectReference Include="..\LinuxLogParserCore\LinuxLogParserCore.csproj" />
   </ItemGroup>
 
@@ -30,5 +29,7 @@
       <PackagePath></PackagePath>
     </None>
   </ItemGroup>
+
+  <Import Project="..\..\Utilities\Utilities.projitems" Label="Shared" />
 
 </Project>

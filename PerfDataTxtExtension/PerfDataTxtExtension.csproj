@@ -56,10 +56,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Utilities\Utilities.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Update="pluginManifest.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -84,5 +80,7 @@
   <Target Name="PostBuild" AfterTargets="DeployStagedFiles">
     <Exec Command="CALL XCOPY /dickherfy $(ProjectDir)..\LTTngDataExtensions\$(OutDir) $(ProjectDir)$(OutDir)\LTTngDataExtensions" />
   </Target>
+  
+  <Import Project="..\Utilities\Utilities.projitems" Label="Shared" />
 
 </Project>
