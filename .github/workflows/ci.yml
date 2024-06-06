@@ -100,7 +100,6 @@ jobs:
           "Launcher" = "Launcher/*"
           "ReleaseFiles" = "ReleaseFiles/*"
         }
-
         foreach ($dir in $dirs.Keys) {
           $sourcePath = $dirs[$dir]
           $targetPath = "${{ github.workspace }}/drop/Microsoft-Performance-Tools-Linux/MicrosoftPerfToolkitAddins/$dir"
