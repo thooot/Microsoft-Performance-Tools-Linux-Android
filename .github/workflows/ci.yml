@@ -68,6 +68,7 @@ jobs:
 
         foreach ($plugin in $dirs.Keys) {
           $sourcePath = $dirs[$plugin]
+          $targetPath = "${{ github.workspace }}/drop/Microsoft-Performance-Tools-Linux/MicrosoftPerfToolkitAddins/PTIX
           $pluginManifestPath = "$sourcePath/pluginManifest.json"
 
           if (!(Test-Path $pluginManifestPath)) {
@@ -80,7 +81,7 @@ jobs:
           $pluginVersion = $pluginManifest.identity.version
           $packageName = "$pluginId-$pluginVersion.ptix"
 
-          plugintool pack -s $sourcePath -o "$sourcePath/$packageName"
+          plugintool pack -s $sourcePath -o "$targetPath/$packageName"
         }
 
     - name: Copy files and prepare artifacts
