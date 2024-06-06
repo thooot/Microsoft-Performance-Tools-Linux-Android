@@ -62,5 +62,4 @@
     <CallTarget Condition="!Exists('$(TargetDir)\trace_processor_shell.exe')" Targets="DownloadTraceProcessorShell" />
   </Target>
 
-  <Import Project="..\Utilities\Utilities.projitems" Label="Shared" />
 </Project>
