@@ -20,7 +20,9 @@ jobs:
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v2
       with:
-        dotnet-version: '8.x'
+        dotnet-version: |
+          6.x
+          8.x
 
     - name: Restore dependencies
       run: dotnet restore Microsoft-Perf-Tools-Linux-Android.sln
@@ -46,6 +48,42 @@ jobs:
 
     - name: Test projects
       run: dotnet test Microsoft-Perf-Tools-Linux-Android.sln --no-restore --verbosity normal
+
+    - name: Install PluginTool
+      run: dotnet tool install --global Microsoft.Performance.Toolkit.Plugins.Cli --version 0.1.25-preview      
+
+    - name: Create PTIX
+      run: |
+        $dirs = @{
+          "PerfDataExtension" = "PerfDataExtension/bin/Release/netstandard2.1/"
+          "PerfDataTxtExtension" = "PerfDataTxtExtension/bin/Release/netstandard2.1/"
+          "LTTngDataExtensions" = "LTTngDataExtensions/bin/Release/netstandard2.1/"
+          "LTTngDriver" = "LTTngDriver/bin/Release/netcoreapp8.0/"
+          "Perfetto" = "PerfettoCds/bin/Release/netstandard2.1/"
+          "Cloud-init" = "LinuxLogParsers/LinuxPlugins-MicrosoftPerformanceToolkSDK/Cloud-init/bin/Release/netstandard2.1/"
+          "Dmesg" = "LinuxLogParsers/LinuxPlugins-MicrosoftPerformanceToolkSDK/DmesgIsoLog/bin/Release/netstandard2.1/"
+          "WaLinuxAgent" = "LinuxLogParsers/LinuxPlugins-MicrosoftPerformanceToolkSDK/WaLinuxAgent/bin/Release/netstandard2.1/"
+          "AndroidLogCat" = "LinuxLogParsers/LinuxPlugins-MicrosoftPerformanceToolkSDK/AndroidLogCat/bin/Release/netstandard2.1/"
+        }
+
+        foreach ($plugin in $dirs.Keys) {
+          $sourcePath = $dirs[$plugin]
+          $targetPath = "${{ github.workspace }}/drop/Microsoft-Performance-Tools-Linux/MicrosoftPerfToolkitAddins/PTIX"
+          New-Item -ItemType Directory -Force -Path $targetPath
+          $pluginManifestPath = "$sourcePath/pluginManifest.json"
+
+          if (!(Test-Path $pluginManifestPath)) {
+            Write-Error "pluginManifest.json not found in $sourcePath"
+          }
+
+          $pluginManifest = Get-Content -Path $pluginManifestPath | ConvertFrom-Json
+
+          $pluginId = $pluginManifest.identity.id
+          $pluginVersion = $pluginManifest.identity.version
+          $packageName = "$pluginId-$pluginVersion.ptix"
+
+          plugintool pack -s $sourcePath -o "$targetPath/$packageName"
+        }
 
     - name: Copy files and prepare artifacts
       run: |
