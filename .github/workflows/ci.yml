@@ -68,7 +68,7 @@ jobs:
 
         foreach ($plugin in $dirs.Keys) {
           $sourcePath = $dirs[$plugin]
-          $targetPath = "${{ github.workspace }}/drop/Microsoft-Performance-Tools-Linux/MicrosoftPerfToolkitAddins/PTIX
+          $targetPath = "${{ github.workspace }}/drop/Microsoft-Performance-Tools-Linux/MicrosoftPerfToolkitAddins/PTIX"
           $pluginManifestPath = "$sourcePath/pluginManifest.json"
 
           if (!(Test-Path $pluginManifestPath)) {
