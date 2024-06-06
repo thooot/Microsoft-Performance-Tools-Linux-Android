@@ -68,7 +68,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LTTngCds\LTTngCds.csproj" />
-    <ProjectReference Include="..\Utilities\Utilities.csproj" />
   </ItemGroup>
 
   <ItemGroup>
