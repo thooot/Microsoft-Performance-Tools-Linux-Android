@@ -68,7 +68,19 @@ jobs:
 
         foreach ($plugin in $dirs.Keys) {
           $sourcePath = $dirs[$plugin]
-          plugintool pack -s $sourcePath -o "$sourcePath/$plugin.ptix"
+          $pluginManifestPath = "$sourcePath/pluginManifest.json"
+
+          if (!(Test-Path $pluginManifestPath)) {
+            Write-Error "pluginManifest.json not found in $sourcePath"
+          }
+
+          $pluginManifest = Get-Content -Path $pluginManifestPath | ConvertFrom-Json
+
+          $pluginId = $pluginManifest.identity.id
+          $pluginVersion = $pluginManifest.identity.version
+          $packageName = "$pluginId-$pluginVersion.ptix"
+
+          plugintool pack -s $sourcePath -o "$sourcePath/$packageName"
         }
 
     - name: Copy files and prepare artifacts
