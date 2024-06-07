@@ -138,6 +138,7 @@ namespace Microsoft.Performance.Toolkit.Plugins.PerfDataExtension
             {
                 Columns = configurationColumns,
             };
+            basicConfig.AddColumnRole(ColumnRole.StartTime, Timestamp_Column);
 
             tableBuilder.SetDefaultTableConfiguration(basicConfig);
 
