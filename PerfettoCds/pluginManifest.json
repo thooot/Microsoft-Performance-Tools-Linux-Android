@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/microsoft/microsoft-performance-toolkit-sdk/main/src/PluginsSystem/Tools/Microsoft.Performance.Toolkit.Plugins.Cli/Manifest/PluginManifestSchema.json",
   "identity": {
     "id": "Microsoft.Performance.Toolkit.Plugins.PerfettoPlugin",
-    "version": "1.5.6"
+    "version": "1.6.2"
   },
   "displayName": "Perfetto for Android and Chromium",
   "description": "Processes Android system and user traces, as well as Chromium based browser performance trace files",
