@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-	<Version>1.5.6</Version>
+	<Version>1.6.2</Version>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <Authors>Microsoft</Authors>
     <Company>Microsoft Corp.</Company>
@@ -16,7 +16,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.25.0">
+    <PackageReference Include="Google.Protobuf" Version="3.27.1">
       <GeneratePathProperty>true</GeneratePathProperty>
     </PackageReference>
     <PackageReference Include="Microsoft.Performance.SDK" Version="1.0.27" />
@@ -29,7 +29,7 @@
   <Target Name="DownloadTraceProcessorShell">
 	<!-- Keep in sync with other DownloadTraceProcessorShell Targets -->
     <!-- Download the trace_processor.exe from Perfetto's GitHub release and copy it to the output directory-->
-    <DownloadFile SourceUrl="https://github.com/google/perfetto/releases/download/v38.0/windows-amd64.zip" DestinationFolder="$(TargetDir)" />
+    <DownloadFile SourceUrl="https://github.com/google/perfetto/releases/download/v45.0/windows-amd64.zip" DestinationFolder="$(TargetDir)" />
     <Unzip SourceFiles="$(TargetDir)\windows-amd64.zip" DestinationFolder="$(TargetDir)" />
     <Copy SourceFiles="$(TargetDir)\windows-amd64\trace_processor_shell.exe" DestinationFolder="$(TargetDir)" />
     <RemoveDir Directories="$(TargetDir)\windows-amd64" />
