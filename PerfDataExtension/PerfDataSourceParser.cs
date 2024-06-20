@@ -229,10 +229,10 @@ namespace Microsoft.Performance.Toolkit.Plugins.PerfDataExtension
                                         structFields -= 1;
                                     }
 
-                                    var type = enumerator.GetItemType();
-                                    if (type.Encoding == EventHeaderFieldEncoding.Struct)
+                                    var itemMetadata = enumerator.GetItemMetadata();
+                                    if (itemMetadata.Encoding == EventHeaderFieldEncoding.Struct)
                                     {
-                                        structFields += type.StructFieldCount;
+                                        structFields += itemMetadata.StructFieldCount;
                                     }
                                 }
 

@@ -483,13 +483,13 @@ namespace Microsoft.Performance.Toolkit.Plugins.PerfDataExtension
                     var field = fields[fieldIndex + commonFieldCount];
                     var fieldVal = field.GetFieldValue(rawData, byteReader);
                     sb.Clear();
-                    if (fieldVal.Type.IsArrayOrElement)
+                    if (fieldVal.Metadata.IsScalar)
                     {
-                        fieldVal.AppendSimpleArrayTo(sb, convertOptions);
+                        fieldVal.AppendScalarTo(sb, convertOptions);
                     }
                     else
                     {
-                        fieldVal.AppendScalarTo(sb, convertOptions);
+                        fieldVal.AppendSimpleArrayTo(sb, convertOptions);
                     }
 
                     row[fieldIndex] = new KeyValuePair<string, string>(field.Name, this.BuilderIntern());
@@ -547,13 +547,13 @@ namespace Microsoft.Performance.Toolkit.Plugins.PerfDataExtension
             }
 
             var fieldVal = field.GetFieldValue(rawData, byteReader);
-            if (fieldVal.Type.IsArrayOrElement)
+            if (fieldVal.Metadata.IsScalar)
             {
-                fieldVal.AppendJsonSimpleArrayTo(this.builder, convertOptions);
+                fieldVal.AppendJsonScalarTo(this.builder, convertOptions);
             }
             else
             {
-                fieldVal.AppendJsonScalarTo(this.builder, convertOptions);
+                fieldVal.AppendJsonSimpleArrayTo(this.builder, convertOptions);
             }
         }
 
