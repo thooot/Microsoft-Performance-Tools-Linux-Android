@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <OutputType>Library</OutputType>
-    <Version>0.1.3</Version>
+    <Version>0.2.0</Version>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <Authors>Microsoft</Authors>
     <Company>Microsoft</Company>
@@ -44,10 +44,10 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Performance.SDK" Version="1.1.24" />
 
-    <PackageReference Include="Microsoft.LinuxTracepoints.Types" Version="0.1.2.*" PrivateAssets="all" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.LinuxTracepoints.Types" Version="0.2.0.*" PrivateAssets="all" GeneratePathProperty="true" />
     <CopyToTargetDir Include="$(PkgMicrosoft_LinuxTracepoints_Types)\lib\netstandard2.1\Microsoft.LinuxTracepoints.Types.dll" />
 
-    <PackageReference Include="Microsoft.LinuxTracepoints.Decode" Version="0.1.2.*" PrivateAssets="all" GeneratePathProperty="true" />
+    <PackageReference Include="Microsoft.LinuxTracepoints.Decode" Version="0.2.0.*" PrivateAssets="all" GeneratePathProperty="true" />
     <CopyToTargetDir Include="$(PkgMicrosoft_LinuxTracepoints_Decode)\lib\netstandard2.1\Microsoft.LinuxTracepoints.Decode.dll" />
   </ItemGroup>
 
