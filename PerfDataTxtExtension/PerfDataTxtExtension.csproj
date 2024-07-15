@@ -49,9 +49,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.0.6" GeneratePathProperty="true">
-      <IncludeAssets>compile</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.12" />
     <PackageReference Include="Microsoft.Performance.SDK" Version="1.0.27" />
   </ItemGroup>
 
@@ -69,13 +67,14 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-  
+<!--
 <ItemGroup>
   <TraceEventWorkaround Include="$(PkgMicrosoft_Diagnostics_Tracing_Traceevent)\lib\netstandard2.0\Microsoft.Diagnostics.Tracing.TraceEvent.dll;$(PkgMicrosoft_Diagnostics_Tracing_Traceevent)\lib\netstandard2.0\Microsoft.Diagnostics.FastSerialization.dll" />
 </ItemGroup>
 <Target Name="CopyRulesToTarget" AfterTargets="Build">
   <Copy SourceFiles="@(TraceEventWorkaround)" DestinationFolder="$(TargetDir)" />
 </Target>
+-->
   
   <Target Name="PostBuild" AfterTargets="DeployStagedFiles">
     <Exec Command="CALL XCOPY /dickherfy $(ProjectDir)..\LTTngDataExtensions\$(OutDir) $(ProjectDir)$(OutDir)\LTTngDataExtensions" />
