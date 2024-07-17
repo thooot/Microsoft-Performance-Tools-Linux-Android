@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using Microsoft.Diagnostics.Tracing.StackSources;
 using Microsoft.Performance.SDK.Processing;
+using PerfDataExtensions.DataOutputTypes;
 
 namespace PerfDataExtensions.Tables
 {
@@ -20,7 +21,7 @@ namespace PerfDataExtensions.Tables
 
     public abstract class LinuxPerfScriptTableBase
     {
-        protected LinuxPerfScriptTableBase(IReadOnlyDictionary<string, ParallelLinuxPerfScriptStackSource> perfDataTxtLogParsed)
+        protected LinuxPerfScriptTableBase(IReadOnlyDictionary<string, List<PerfDataLinuxEvent>> perfDataTxtLogParsed)
         {
             this.PerfDataTxtLogParsed = perfDataTxtLogParsed;
         }
@@ -30,7 +31,7 @@ namespace PerfDataExtensions.Tables
         // and so we will make sure all tables have access to the collection of lines in the file.
         //
 
-        public IReadOnlyDictionary<string, ParallelLinuxPerfScriptStackSource> PerfDataTxtLogParsed { get; }
+        public IReadOnlyDictionary<string, List<PerfDataLinuxEvent>> PerfDataTxtLogParsed { get; }
 
         //
         // All tables will need some way to build themselves via the ITableBuilder interface.

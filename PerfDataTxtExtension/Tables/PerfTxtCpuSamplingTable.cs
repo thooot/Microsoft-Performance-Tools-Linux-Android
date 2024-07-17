@@ -13,6 +13,7 @@ using Microsoft.Performance.SDK.Processing;
 using PerfDataExtensions.Tables.Generators;
 using Utilities.AccessProviders;
 using static PerfDataExtensions.Tables.TimeHelper;
+using PerfDataExtensions.DataOutputTypes;
 
 namespace PerfDataExtensions.Tables
 {
@@ -35,15 +36,10 @@ namespace PerfDataExtensions.Tables
             "Perf.data.txt",
             category: "Linux");
 
-        public PerfTxtCpuSamplingTable(IReadOnlyDictionary<string, ParallelLinuxPerfScriptStackSource> parallelLinuxPerfScriptStackSource)
+        public PerfTxtCpuSamplingTable(IReadOnlyDictionary<string, List<PerfDataLinuxEvent>> parallelLinuxPerfScriptStackSource)
             : base(parallelLinuxPerfScriptStackSource)
         {
         }
-
-        ConcurrentDictionary<long, StackFrame> IpStackFrames;
-        ConcurrentDictionary<long, int> SampleThreadDict;
-        ConcurrentDictionary<long, string> SampleProcessDict;
-        ConcurrentDictionary<long, ManualResetEvent> SampleStackWalkEvent;
 
         //
         // Declare columns here. You can do this using the ColumnConfiguration class. 
@@ -69,12 +65,20 @@ namespace PerfDataExtensions.Tables
             new ColumnMetadata(new Guid("{F6ABD26E-5F4D-4ABC-9A7B-DA935C1AF216}"), "Event Time", "The timestamp of the sample"),
             new UIHints { Width = 130 });
 
-        private static readonly ColumnConfiguration instructionPointerColumn = new ColumnConfiguration(
-            new ColumnMetadata(new Guid("{96499680-C05D-46C6-B12D-12D3C1D851AF}"), "IP", "The frame of the Instruction Pointer(IP)"),
+        private static readonly ColumnConfiguration categoryColumn = new ColumnConfiguration(
+            new ColumnMetadata(new Guid("{e3d3c53f-ea0b-449a-ad75-70c0d051ad12}"), "Category", "The type of CPU sample (Regular/Idle/ISR)"),
             new UIHints { Width = 130 });
 
-        private static readonly ColumnConfiguration instructionPointerModuleColumn = new ColumnConfiguration(
-            new ColumnMetadata(new Guid("{2DEFEC0D-B004-4285-A824-E82CFC6DE87D}"), "IPModule", "The module of the Instruction Pointer(IP)"),
+        private static readonly ColumnConfiguration addressColumn = new ColumnConfiguration(
+            new ColumnMetadata(new Guid("{96499680-C05D-46C6-B12D-12D3C1D851AF}"), "Address", "The address of the Instruction Pointer(IP)"),
+            new UIHints { Width = 130 });
+
+        private static readonly ColumnConfiguration functionColumn = new ColumnConfiguration(
+            new ColumnMetadata(new Guid("{d95e62c7-057e-4d4d-9cbe-1c298198cfaa}"), "Function", "The function of the Instruction Pointer(IP)"),
+            new UIHints { Width = 130 });
+
+        private static readonly ColumnConfiguration moduleColumn = new ColumnConfiguration(
+            new ColumnMetadata(new Guid("{2DEFEC0D-B004-4285-A824-E82CFC6DE87D}"), "Module", "The module of the Instruction Pointer(IP)"),
             new UIHints { Width = 130 });
 
         private static readonly ColumnConfiguration countColumn = new ColumnConfiguration(
@@ -88,12 +92,22 @@ namespace PerfDataExtensions.Tables
 
         private static readonly ColumnConfiguration threadIdColumn =
             new ColumnConfiguration(
-                new ColumnMetadata(new Guid("{4CDF8D15-0538-433C-BBF1-1F961107C79E}"), "ThreadId"),
+                new ColumnMetadata(new Guid("{4CDF8D15-0538-433C-BBF1-1F961107C79E}"), "Thread ID"),
+                new UIHints { Width = 80, });
+
+        private static readonly ColumnConfiguration processIdColumn =
+            new ColumnConfiguration(
+                new ColumnMetadata(new Guid("{6c53ad65-ec92-490f-8e6c-156517fb6056}"), "Process ID"),
                 new UIHints { Width = 80, });
 
         private static readonly ColumnConfiguration processColumn =
             new ColumnConfiguration(
                 new ColumnMetadata(new Guid("{248F425D-2E91-4D2B-9E5D-98D4C873D810}"), "Process"),
+                new UIHints { Width = 80, });
+
+        private static readonly ColumnConfiguration processNameColumn =
+            new ColumnConfiguration(
+                new ColumnMetadata(new Guid("{1376986c-83c8-4be2-b97a-5f168daffea3}"), "Process Name"),
                 new UIHints { Width = 80, });
 
         private static readonly ColumnConfiguration cpuColumn =
@@ -136,18 +150,6 @@ namespace PerfDataExtensions.Tables
                 new ColumnMetadata(new Guid("{221F9DDA-8CB2-4647-94F4-654EC6D1AE6D}"), "Clipped Weight"),
                 new UIHints { Width = 80, });
 
-        public class StackFrame
-        {
-            public StackFrame(string module, string frame)
-            {
-                Module = module;
-                Frame = frame;
-            }
-
-            public string Module { get; }
-            public string Frame { get; }
-        }
-
         public override void Build(ITableBuilder tableBuilder)
         {
             if (PerfDataTxtLogParsed == null || PerfDataTxtLogParsed.Count == 0)
@@ -156,34 +158,66 @@ namespace PerfDataExtensions.Tables
             }
 
             var firstPerfDataTxtLogParsed = PerfDataTxtLogParsed.First().Value;  // First Log
+            double firstTimeStamp = 0;
+
+            if (firstPerfDataTxtLogParsed.Count > 0)
+            {
+                firstTimeStamp = firstPerfDataTxtLogParsed[0].TimeMSec;
+            }
 
             // Init
-            IpStackFrames = new ConcurrentDictionary<long, StackFrame>();
-            SampleThreadDict = new ConcurrentDictionary<long, int>();
-            SampleProcessDict = new ConcurrentDictionary<long, string>();
-            SampleStackWalkEvent = new ConcurrentDictionary<long, ManualResetEvent>();
+            List<PerfDataLinuxEvent> profileEvents = new List<PerfDataLinuxEvent>();
+            List<string> category = new List<string>();
 
-            var baseProjection = Projection.CreateUsingFuncAdaptor(new Func<int, LinuxPerfScriptStackSourceSample>(i => firstPerfDataTxtLogParsed.GetLinuxPerfScriptSampleByIndex((StackSourceSampleIndex)i)));
+            const string categoryRegular = "Regular CPU";
+            const string categoryISR = "ISR";
+            const string categoryIdle = "Idle";
+
+            foreach (PerfDataLinuxEvent linuxEvent in firstPerfDataTxtLogParsed)
+            {
+                if (linuxEvent.EventName == "cpu-clock")
+                {
+                    profileEvents.Add(linuxEvent);
+                    if (linuxEvent.stackFrame.stack.Contains("kernel.kallsyms!irq_exit"))
+                    {
+                        category.Add(categoryISR);
+                    }
+                    else if (linuxEvent.stackFrame.stackFrame.Symbol == "native_safe_halt")
+                    {
+                        category.Add(categoryIdle);
+                    }
+                    else
+                    {
+                        category.Add(categoryRegular);
+                    }
+                }
+            }
+
+            var baseProjection = Projection.CreateUsingFuncAdaptor(new Func<int,int>(i => i));
 
             // Calculate sample weights
-            var sampleWeights = CalculateSampleWeights(firstPerfDataTxtLogParsed);
+            var sampleWeights = CalculateSampleWeights(profileEvents);
 
             var oneNs = new TimestampDelta(1);
-            var weightProj = baseProjection.Compose(s => s.SampleIndex == StackSourceSampleIndex.Invalid ? TimestampDelta.Zero : new TimestampDelta(Convert.ToInt64(sampleWeights[(int)s.SampleIndex] * 1000000)));
+            var weightProj = baseProjection.Compose(s => new TimestampDelta(Convert.ToInt64(sampleWeights[s] * 1000000)));
 
             // Constant columns
-            var sampleIndex = baseProjection.Compose(s => (long)s.SampleIndex);
-            var timeStampProjection = baseProjection.Compose(s => s.SampleIndex == StackSourceSampleIndex.Invalid ? Timestamp.Zero : new Timestamp(Convert.ToInt64(s.TimeRelativeMSec * 1000000)));
-            var cpuProjection = baseProjection.Compose(s => s.SampleIndex == StackSourceSampleIndex.Invalid ? -1 : s.CpuNumber);
+            var sampleIndex = baseProjection.Compose(s => (long)s);
+            var timeStampProjection = baseProjection.Compose(s => new Timestamp(Convert.ToInt64((profileEvents[s].TimeMSec - firstTimeStamp) * 1000000)));
+            var cpuProjection = baseProjection.Compose(s => profileEvents[s].CpuNumber);
             var countProjection = baseProjection.Compose(s => 1);
-            var ipStackFrameProjection = baseProjection.Compose(s => GetIpStackFrame(s, firstPerfDataTxtLogParsed)?.Frame);
-            var ipModuleProjection = baseProjection.Compose(s => GetIpStackFrame(s, firstPerfDataTxtLogParsed)?.Module);
-            var threadIdProjection = baseProjection.Compose(s => GetThreadId(s, firstPerfDataTxtLogParsed));
-            var processProjection = baseProjection.Compose(s => GetProcess(s, firstPerfDataTxtLogParsed));
+            var categoryProjection = baseProjection.Compose(s => (category[s]));
+            var ipAddressProjection = baseProjection.Compose(s => (profileEvents[s]).stackFrame.stackFrame.Address);
+            var ipFunctionProjection = baseProjection.Compose(s => (profileEvents[s]).stackFrame.stackFrame.Symbol);
+            var ipModuleProjection = baseProjection.Compose(s => (profileEvents[s]).stackFrame.stackFrame.Module);
+            var threadIdProjection = baseProjection.Compose(s => profileEvents[s].ThreadID);
+            var processIdProjection = baseProjection.Compose(s => profileEvents[s].ProcessID);
+            var processProjection = baseProjection.Compose(s => string.Format("{0} ({1})", profileEvents[s].Command, profileEvents[s].ProcessID));
+            var processNameProjection = baseProjection.Compose(s => profileEvents[s].Command);
 
 
             // For calculating cpu %
-            var timeStampStartProjection = baseProjection.Compose(s => s.SampleIndex == StackSourceSampleIndex.Invalid ? Timestamp.Zero : new Timestamp(Convert.ToInt64(s.TimeRelativeMSec * 1000000)) - new TimestampDelta(Convert.ToInt64(sampleWeights[(int)s.SampleIndex] * 1000000)));
+            var timeStampStartProjection = baseProjection.Compose(s => new Timestamp(Convert.ToInt64(profileEvents[s].TimeMSec - firstTimeStamp) * 1000000) - new TimestampDelta(Convert.ToInt64(sampleWeights[s] * 1000000)));
             IProjection<int, Timestamp> viewportClippedStartTimeProj = Projection.ClipTimeToVisibleDomain.Create(timeStampStartProjection);
             IProjection<int, Timestamp> viewportClippedEndTimeProj = Projection.ClipTimeToVisibleDomain.Create(timeStampProjection);
 
@@ -195,7 +229,7 @@ namespace PerfDataExtensions.Tables
             IProjection<int, double> weightPercentProj = Projection.VisibleDomainRelativePercent.Create(clippedWeightProj);
 
             IProjection<int, int> countProj = SequentialGenerator.Create(
-                firstPerfDataTxtLogParsed.SampleIndexLimit,
+                profileEvents.Count,
                 Projection.Constant(1),
                 Projection.Constant(0));
 
@@ -208,7 +242,7 @@ namespace PerfDataExtensions.Tables
             // For more information about what these columns do, go to "Advanced Topics" -> "Table Configuration" in our Wiki. Link can be found in README.md
             //
 
-            const string filterIdleSamplesQuery = "[IP]:=\"native_safe_halt\"";
+            const string filterIdleSamplesQuery = "[Function]:=\"native_safe_halt\"";
 
             var utilByCpuStackConfig = new TableConfiguration("Utilization by CPU, Stack")
             {
@@ -219,8 +253,8 @@ namespace PerfDataExtensions.Tables
                     TableConfiguration.PivotColumn,
                     processColumn,
                     threadIdColumn,
-                    instructionPointerColumn,
-                    instructionPointerModuleColumn,
+                    functionColumn,
+                    moduleColumn,
                     sampleNumberColumn,
                     timestampDateTimeColumn,
                     timestampColumn,
@@ -247,8 +281,8 @@ namespace PerfDataExtensions.Tables
                     callStackColumn,
                     processColumn,
                     threadIdColumn,
-                    instructionPointerColumn,
-                    instructionPointerModuleColumn,
+                    functionColumn,
+                    moduleColumn,
                     sampleNumberColumn,
                     timestampDateTimeColumn,
                     timestampColumn,
@@ -274,8 +308,8 @@ namespace PerfDataExtensions.Tables
                     callStackColumn,
                     cpuColumn,
                     threadIdColumn,
-                    instructionPointerColumn,
-                    instructionPointerModuleColumn,
+                    functionColumn,
+                    moduleColumn,
                     sampleNumberColumn,
                     timestampDateTimeColumn,
                     timestampColumn,
@@ -301,8 +335,8 @@ namespace PerfDataExtensions.Tables
                     countColumn,
                     cpuColumn,
                     threadIdColumn,
-                    instructionPointerColumn,
-                    instructionPointerModuleColumn,
+                    functionColumn,
+                    moduleColumn,
                     sampleNumberColumn,
                     timestampDateTimeColumn,
                     timestampColumn,
@@ -328,8 +362,8 @@ namespace PerfDataExtensions.Tables
                     countColumn,
                     cpuColumn,
                     threadIdColumn,
-                    instructionPointerColumn,
-                    instructionPointerModuleColumn,
+                    functionColumn,
+                    moduleColumn,
                     sampleNumberColumn,
                     timestampDateTimeColumn,
                     timestampColumn,
@@ -359,15 +393,19 @@ namespace PerfDataExtensions.Tables
                 .AddTableConfiguration(utilByProcessConfig)
                 .AddTableConfiguration(utilByProcessStackConfig)
                 .AddTableConfiguration(flameByProcessStackConfig)
-                .SetRowCount(firstPerfDataTxtLogParsed.SampleIndexLimit)
+                .SetRowCount(profileEvents.Count)
                 .AddColumn(sampleNumberColumn, sampleIndex)
                 .AddColumn(timestampColumn, timeStampProjection)
-                .AddColumn(instructionPointerColumn, ipStackFrameProjection)
-                .AddColumn(instructionPointerModuleColumn, ipModuleProjection)
+                .AddColumn(categoryColumn, categoryProjection)
+                .AddColumn(functionColumn, ipFunctionProjection)
+                .AddColumn(moduleColumn, ipModuleProjection)
+                .AddColumn(addressColumn, ipAddressProjection)
                 .AddColumn(countColumn, countProjection)
                 .AddColumn(weightColumn, weightProj)
                 .AddColumn(threadIdColumn, threadIdProjection)
+                .AddColumn(processIdColumn, processIdProjection)
                 .AddColumn(processColumn, processProjection)
+                .AddColumn(processNameColumn, processNameProjection)
                 .AddColumn(weightPctColumn, weightPercentProj)
                 .AddColumn(startTimeCol, timeStampStartProjection)
                 .AddColumn(viewportClippedStartTimeCol, viewportClippedStartTimeProj)
@@ -376,161 +414,38 @@ namespace PerfDataExtensions.Tables
                 .AddColumn(cpuColumn, cpuProjection)
             ;
 
-            table.AddHierarchicalColumn(callStackColumn, baseProjection.Compose((i) => GetCallStack(i, firstPerfDataTxtLogParsed)), new ArrayAccessProvider<string>());
+            table.AddHierarchicalColumn(callStackColumn, baseProjection.Compose((i) => (profileEvents[i]).stackFrame.stack), new ArrayAccessProvider<string>());
 
         }
 
-        /// <summary>
-        /// Cache/split IP Module/Frame
-        /// </summary>
-        /// <param name="sample"></param>
-        /// <param name="stackSource"></param>
-        /// <returns></returns>
-        private StackFrame GetIpStackFrame(StackSourceSample sample, ParallelLinuxPerfScriptStackSource stackSource)
-        {
-            if (sample.SampleIndex == StackSourceSampleIndex.Invalid)
-            {
-                return new StackFrame(String.Empty, String.Empty);
-            }
-
-            var si = sample.StackIndex;
-            StackFrame sf;
-            if (IpStackFrames.TryGetValue((int)si, out sf))
-            {
-                return sf;
-            }
-            else
-            {
-                var frame = stackSource.GetFrameIndex(si);
-                var frameName = stackSource.Interner.GetFrameName(frame, false);
-
-                var frameNameSplit = frameName.Split('!');
-                if (frameNameSplit.Length == 2)
-                {
-                    sf = new StackFrame(frameNameSplit[0], frameNameSplit[1]);
-                    IpStackFrames.TryAdd((int)si, sf);
-                    return sf;
-                }
-                return null;
-            }
-        }
-
-        private string[] GetCallStack(StackSourceSample sample, ParallelLinuxPerfScriptStackSource stackSource)
-        {
-            if (sample.SampleIndex == StackSourceSampleIndex.Invalid)
-            {
-                return new string[0];
-            }
-
-            var callStack = new List<string>();
-
-            // IP
-            var ip = GetIpStackFrame(sample, stackSource);
-
-            String ipFrame;
-            if (ip != null)
-            {
-                ipFrame = $"{ip.Module}!{ip.Frame}";
-            }
-            else
-            {
-                ipFrame = "Unknown!Unknown";
-            }
-            callStack.Add(ipFrame);
-
-            // Callstack
-            StackSourceFrameIndex currentCallStackFrame;
-            String currentCallStackFrameStr;
-
-            var callerIndex = stackSource.GetCallerIndex(sample.StackIndex);
-            while (callerIndex != StackSourceCallStackIndex.Invalid &&
-                   callerIndex != StackSourceCallStackIndex.Start)
-            {
-                currentCallStackFrame = stackSource.GetFrameIndex(callerIndex);
-                currentCallStackFrameStr = stackSource.Interner.GetFrameName(currentCallStackFrame, false);
-
-                // Get next caller
-                callerIndex = stackSource.GetCallerIndex(callerIndex);
-
-                // Before start is the thread which we don't want as part of callstack
-                if (callerIndex == StackSourceCallStackIndex.Invalid)
-                {
-                    // Process
-                    SampleProcessDict.TryAdd((long)sample.SampleIndex, currentCallStackFrameStr);
-                    //callStack.Add(currentCallStackFrameStr); // just for testing
-                }
-                else
-                {
-                    if (currentCallStackFrameStr.StartsWith("Thread ("))
-                    {
-                        int tid;
-                        if (Int32.TryParse(currentCallStackFrameStr.Replace("Thread (", String.Empty).Replace(")", String.Empty), out tid))
-                        {
-                            SampleThreadDict.TryAdd((long)sample.SampleIndex, tid);
-                        }
-                    }
-                    else
-                    {
-                        callStack.Add(currentCallStackFrameStr);
-                    }
-                }
-            }
-
-            return callStack.Reverse<string>().ToArray();
-        }
-
-        private int GetThreadId(StackSourceSample sample, ParallelLinuxPerfScriptStackSource stackSource)
-        {
-            if (sample.SampleIndex == StackSourceSampleIndex.Invalid)
-            {
-                return -1;
-            }
-
-            int tid;
-            SampleThreadDict.TryGetValue((long)sample.SampleIndex, out tid);
-            return tid;
-        }
-
-        private string GetProcess(StackSourceSample sample, ParallelLinuxPerfScriptStackSource stackSource)
-        {
-            if (sample.SampleIndex == StackSourceSampleIndex.Invalid)
-            {
-                return String.Empty;
-            }
-
-            string process;
-            SampleProcessDict.TryGetValue((long)sample.SampleIndex, out process);
-            return process;
-        }
-
-        private Dictionary<int, double> CalculateSampleWeights(ParallelLinuxPerfScriptStackSource stackSource)
+        private Dictionary<int, double> CalculateSampleWeights(List<PerfDataLinuxEvent> linuxEvents)
         {
             var sampleWeights = new Dictionary<int, double>();
 
             const int MaxCpus = 256;
             var lastPerCpuSampleWeight = new Tuple<int, double>[MaxCpus]; // Per CPU - Last sample #, TimeRelativeMSec
 
-            for (var i = 0; i < stackSource.SampleIndexLimit; i++)
+            for (var i = 0; i < linuxEvents.Count; i++)
             {
-                var sample = stackSource.GetLinuxPerfScriptSampleByIndex((StackSourceSampleIndex)i);
-                var prevSampleTimeRelativeMSec = lastPerCpuSampleWeight[sample.CpuNumber];
+                var linuxEvent = linuxEvents[i];
+                var prevSampleTimeRelativeMSec = lastPerCpuSampleWeight[linuxEvent.CpuNumber];
 
                 if (prevSampleTimeRelativeMSec != null)
                 {
-                    var weightOfLastSampleOnCpu = sample.TimeRelativeMSec - prevSampleTimeRelativeMSec.Item2;
+                    var weightOfLastSampleOnCpu = linuxEvent.TimeMSec - prevSampleTimeRelativeMSec.Item2;
                     sampleWeights.Add(prevSampleTimeRelativeMSec.Item1, weightOfLastSampleOnCpu);    // Weight is duration for the prev samp
                 }
-                lastPerCpuSampleWeight[sample.CpuNumber] = new Tuple<int, double>(i, sample.TimeRelativeMSec);
+                lastPerCpuSampleWeight[linuxEvent.CpuNumber] = new Tuple<int, double>(i, linuxEvent.TimeMSec);
             }
 
 
             var medSampleWeight = Median(sampleWeights);
             // Now there will be samples at the end that don't have a weight
-            for (var i = 0; i < stackSource.SampleIndexLimit; i++)
+            foreach (var cpuSample in lastPerCpuSampleWeight)
             {
-                if (!sampleWeights.ContainsKey(i))
+                if (cpuSample != null)
                 {
-                    sampleWeights.Add(i, medSampleWeight);
+                    sampleWeights.Add(cpuSample.Item1, medSampleWeight);
                 }
             }
 

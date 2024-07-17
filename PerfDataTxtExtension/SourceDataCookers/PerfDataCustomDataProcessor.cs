@@ -6,21 +6,83 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.Tracing.Stacks;
 using Microsoft.Diagnostics.Tracing.StackSources;
 using Microsoft.Performance.SDK.Processing;
 using PerfDataExtensions.Tables;
+using PerfDataExtensions.DataOutputTypes;
+using Microsoft.Diagnostics.Symbols;
+using System.Reflection;
 
 namespace PerfDataProcessingSource
 {
+    public class PerfDataStackCache
+    {
+        PerfDataStackFrame root;
+
+        public PerfDataStackCache() 
+        {
+            Microsoft.Diagnostics.Tracing.StackSources.StackFrame dummyFrame = new Microsoft.Diagnostics.Tracing.StackSources.StackFrame("0", "unknown", "unknown");
+            root = new PerfDataStackFrame(dummyFrame, new string[] { "unknown!unknown" });
+        }
+
+        public PerfDataStackFrame LookupStack(IEnumerable<Frame> stack)
+        {
+            PerfDataStackFrame curFrame = root;
+            IEnumerable<Frame> reverseStack = stack.Reverse();
+            List<string> stackFrames = new List<string>();
+            string prevModule = null;
+
+            //
+            // We implement a stack cache to avoid memory bloat
+            //
+
+            foreach (Frame frame in reverseStack)
+            {
+                if (frame.Kind == FrameKind.StackFrame)
+                {
+                    Microsoft.Diagnostics.Tracing.StackSources.StackFrame stackFrame = (Microsoft.Diagnostics.Tracing.StackSources.StackFrame)frame;
+                    PerfDataStackFrame child;
+
+                    //
+                    // Add the frame to the stack, fixing up inlined functions
+                    //
+
+                    if (stackFrame.Module == "inlined" && prevModule != null)
+                    {
+                        stackFrame = new Microsoft.Diagnostics.Tracing.StackSources.StackFrame(stackFrame.Address, prevModule, stackFrame.Symbol);
+                    }
+
+                    stackFrames.Add(stackFrame.DisplayName);
+                    prevModule = stackFrame.Module;
+
+                    if (curFrame.children.TryGetValue(stackFrame, out child))
+                    {
+                        curFrame = child;
+                    }
+                    else
+                    {
+                        child = new PerfDataStackFrame(stackFrame, stackFrames.ToArray());
+                        curFrame.children.Add(stackFrame, child);
+                        curFrame = child;
+                    }
+                }
+            }
+
+            return curFrame;
+        }
+    }
+
     public sealed class PerfDataCustomDataProcessor
         : CustomDataProcessor
     {
         private readonly string[] filePaths;
-        private IReadOnlyDictionary<string, ParallelLinuxPerfScriptStackSource> fileContent;
+        private IReadOnlyDictionary<string, List<PerfDataLinuxEvent>> fileContent;
         private DataSourceInfo dataSourceInfo;
+        private PerfDataStackCache stackCache;
 
         public PerfDataCustomDataProcessor(
            string[] filePaths,
@@ -34,6 +96,7 @@ namespace PerfDataProcessingSource
             //
 
             this.filePaths = filePaths;
+            this.stackCache = new PerfDataStackCache();
         }
 
         public override DataSourceInfo GetDataSourceInfo()
@@ -48,7 +111,7 @@ namespace PerfDataProcessingSource
            IProgress<int> progress,
            CancellationToken cancellationToken)
         {
-            var contentDictionary = new Dictionary<string, ParallelLinuxPerfScriptStackSource>();
+            var contentDictionary = new Dictionary<string, List<PerfDataLinuxEvent>>();
 
             foreach (var path in this.filePaths)
             {
@@ -77,16 +140,26 @@ namespace PerfDataProcessingSource
                     traceStartTime = DateTime.FromFileTimeUtc(traceStartTime.ToFileTimeUtc());
                 }
 
-                var stackSource = new ParallelLinuxPerfScriptStackSource(path);
+                LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser();
+                var events = new List<PerfDataLinuxEvent>();
+                foreach (var linuxEvent in parser.ParseSkippingPreamble(path))
+                {
+                    PerfDataStackFrame stackFrame = stackCache.LookupStack(linuxEvent.CallerStacks);
+                    PerfDataLinuxEvent perfDataLinuxEvent = new PerfDataLinuxEvent(linuxEvent, stackFrame);
+                    events.Add(perfDataLinuxEvent);
+                }
 
-                var lastSample = stackSource.GetLinuxPerfScriptSampleByIndex((StackSourceSampleIndex)stackSource.SampleIndexLimit - 1);
+                double duration = 0;
+                if (events.Count > 1)
+                {
+                    duration = (events.Last().TimeMSec - events.First().TimeMSec) * 1000000;
+                }
 
-                contentDictionary[path] = stackSource;
-                this.dataSourceInfo = new DataSourceInfo(0, (long)lastSample.TimeRelativeMSec * 1000000, traceStartTime);
-
+                contentDictionary[path] = events;
+                this.dataSourceInfo = new DataSourceInfo(0, (long)duration, traceStartTime);
             }
 
-            this.fileContent = new ReadOnlyDictionary<string, ParallelLinuxPerfScriptStackSource>(contentDictionary);
+            this.fileContent = new ReadOnlyDictionary<string, List<PerfDataLinuxEvent>>(contentDictionary);
 
             return Task.CompletedTask;
         }
