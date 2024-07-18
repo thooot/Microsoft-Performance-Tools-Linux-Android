@@ -12,6 +12,7 @@ namespace PerfDataExtensions.DataOutputTypes
         public ThreadExit threadExit { get; }
         public BlockReqIssue blockReqIssue { get; }
         public BlockReqComplete blockReqComplete { get; }
+        public SchedWakeup schedWakeup { get; } 
         public PerfDataStackFrame stackFrame { get; }
 
         public PerfDataLinuxEvent(
@@ -36,6 +37,10 @@ namespace PerfDataExtensions.DataOutputTypes
             else if (linuxEvent.Kind == EventKind.BlockRequestComplete)
             {
                 blockReqComplete = ((BlockReqCompleteEvent)linuxEvent).ReqComplete;
+            }
+            else if (linuxEvent.Kind == EventKind.Wakeup)
+            {
+                schedWakeup = ((SchedWakeupEvent)linuxEvent).Wakeup;
             }
 
             this.stackFrame = stackFrame;
