@@ -77,8 +77,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfDataUnitTest", "PerfDat
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Utilities", "Utilities\Utilities.shproj", "{B0F4D7F4-B11C-41B8-96F5-2414174C3E7D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TraceEvent", "..\Linux-Perfview\src\TraceEvent\TraceEvent.csproj", "{A5CB6A90-9963-49FF-96EE-EAD7515FDA7E}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -173,10 +171,6 @@ Global
 		{B57A38CD-9641-476C-A2FB-DF24D1700F41}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B57A38CD-9641-476C-A2FB-DF24D1700F41}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B57A38CD-9641-476C-A2FB-DF24D1700F41}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A5CB6A90-9963-49FF-96EE-EAD7515FDA7E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A5CB6A90-9963-49FF-96EE-EAD7515FDA7E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A5CB6A90-9963-49FF-96EE-EAD7515FDA7E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A5CB6A90-9963-49FF-96EE-EAD7515FDA7E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

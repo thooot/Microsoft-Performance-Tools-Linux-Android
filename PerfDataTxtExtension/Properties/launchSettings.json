@@ -2,8 +2,8 @@
   "profiles": {
     "PerfDataExtensions": {
       "commandName": "Executable",
-      "executablePath": "D:\\wpa\\wpa.exe",
-      "commandLineArgs": "-addsearchdir D:\\Linux-WPA-Plugin\\PerfDataTxtExtension\\bin\\Debug\\netstandard2.1"
+      "executablePath": "C:\\Tools\\WPT\\latest\\wpa.exe",
+      "commandLineArgs": "-addsearchdir C:\\src\\Microsoft-Performance-Tools-Linux\\PerfDataExtensions\\bin\\Debug\\netstandard2.1"
     }
   }
 }
