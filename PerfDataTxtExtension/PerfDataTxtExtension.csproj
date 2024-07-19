@@ -49,8 +49,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.12" />
     <PackageReference Include="Microsoft.Performance.SDK" Version="1.0.27" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Linux-Perfview\src\TraceEvent\TraceEvent.csproj" />
   </ItemGroup>
 
   <ItemGroup>

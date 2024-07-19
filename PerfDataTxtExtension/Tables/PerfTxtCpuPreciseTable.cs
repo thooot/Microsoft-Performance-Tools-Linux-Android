@@ -17,12 +17,26 @@ using PerfDataExtensions.DataOutputTypes;
 
 namespace PerfDataExtensions.Tables
 {
+
     public class ContextSwapEvent
     {
-        public PerfDataLinuxEvent swapOutEvent { get; set; }
-        public PerfDataLinuxEvent nextSwapOutEvent { get; set; }
-        public PerfDataLinuxEvent prevSwapOutThreadEvent { get; set; }
-        public PerfDataLinuxEvent readyEvent { get; set; }
+        private static readonly string[] emptyStack = new string[] { };
+        public double readyTime { get; set; }
+        public double swapInTime { get; set; }
+        public Timestamp swapInTimestamp { get; set; }
+        public Timestamp readyTimestamp { get; set; }
+        public Timestamp prevSwapOutTimestamp { get; set; }
+        public double waitDuration { get; set; } = 0;
+        public double readyDuration { get; set; } = 0;
+        public double runDuration { get; set; } = 0;
+        public int newThreadId { get; set; } = -1;
+        public string newProcess { get; set; } = "Unknown (-1)";
+        public int cpuNumber { get; set; }
+        public int readyThreadId { get; set; } = -1;
+        public string readyProcess { get; set; } = "Unknown (-1)";
+        public string[] prevSwapOutStack { get; set; } = emptyStack;
+        public string[] readyStack { get; set; } = emptyStack;
+        public bool setNewProcess { get; set; } = false;
     }
 
     //
@@ -126,6 +140,17 @@ namespace PerfDataExtensions.Tables
                 new ColumnMetadata(new Guid("{10eb716f-2a0a-45c4-92ea-d4c05d3814bc}"), "Ready Process"),
                 new UIHints { Width = 80, });
 
+        private static readonly ColumnConfiguration cpuPctColumn =
+            new ColumnConfiguration(
+                new ColumnMetadata(new Guid("{d4b88997-1bf3-43a7-a19d-cfcba3cbc29c}"), "% CPU Usage"),
+                new UIHints
+                {
+                    Width = 80,
+                    AggregationMode = AggregationMode.Sum,
+                    SortPriority = 0,
+                    SortOrder = SortOrder.Descending,
+                });
+
         public override void Build(ITableBuilder tableBuilder)
         {
             if (PerfDataTxtLogParsed == null || PerfDataTxtLogParsed.Count == 0)
@@ -151,12 +176,42 @@ namespace PerfDataExtensions.Tables
 
             foreach (PerfDataLinuxEvent linuxEvent in firstPerfDataTxtLogParsed)
             {
+                ContextSwapEvent cswap;
+
+                if (lastSwapOut.TryGetValue(linuxEvent.CpuNumber, out cswap))
+                {
+                    // Fix up the new thread/process information for the cswap
+                    if (!cswap.setNewProcess)
+                    {
+                        cswap.newThreadId = linuxEvent.ThreadID;
+                        cswap.newProcess = string.Format("{0} ({1})", linuxEvent.Command, linuxEvent.ProcessID);
+                        cswap.setNewProcess = true;
+                    }
+                }
+                else
+                {
+                    // This is the first event on this CPU - create a dummy cswap at the trace start time
+                    cswap = new ContextSwapEvent();
+                    cswap.swapInTime = firstTimeStamp;
+                    cswap.readyTime = firstTimeStamp;
+                    cswap.swapInTimestamp = Timestamp.Zero;
+                    cswap.readyTimestamp = Timestamp.Zero;
+                    cswap.prevSwapOutTimestamp = Timestamp.Zero;
+                    cswap.newThreadId = linuxEvent.ThreadID;
+                    cswap.newProcess = string.Format("{0} ({1})", linuxEvent.Command, linuxEvent.ProcessID);
+                    cswap.waitDuration = 0;
+                    cswap.runDuration = lastTimeStamp - linuxEvent.TimeMSec;
+                    cswap.cpuNumber = linuxEvent.CpuNumber;
+                    cswap.setNewProcess = true;
+                    lastSwapOut[linuxEvent.CpuNumber] = cswap;
+                    contextSwaps.Add(cswap);
+                }
+
                 // The scheduler event has both swap in and swap out information, but the context-switch events only have swap out
                 // Limit ourselves to just the swap out information as we need to handle this case anyways
                 if (linuxEvent.Kind == EventKind.Scheduler || linuxEvent.EventName == "context-switches" || linuxEvent.EventName == "cs")
                 {
                     Tuple<int, int> threadId;
-                    ContextSwapEvent cswap;
 
                     if (linuxEvent.ThreadID == 0)
                     {
@@ -172,57 +227,89 @@ namespace PerfDataExtensions.Tables
                     {
                         PerfDataLinuxEvent prevSwapOut;
 
-                        cswap.nextSwapOutEvent = linuxEvent;
+                        if (!cswap.setNewProcess)
+                        {
+                            cswap.newThreadId = linuxEvent.ThreadID;
+                            cswap.newProcess = string.Format("{0} ({1})", linuxEvent.Command, linuxEvent.ProcessID);
+                            cswap.setNewProcess = true;
+                        }
+                        cswap.runDuration = linuxEvent.TimeMSec - cswap.swapInTime;
 
                         // If this thread has swapped out before, track the previous swap out
-                        if (lastSwapOutThread.TryGetValue(threadId, out prevSwapOut) && prevSwapOut.TimeMSec < cswap.swapOutEvent.TimeMSec)
+                        if (lastSwapOutThread.TryGetValue(threadId, out prevSwapOut) && prevSwapOut.TimeMSec < cswap.swapInTime)
                         {
-                            cswap.prevSwapOutThreadEvent = prevSwapOut;
+                            cswap.prevSwapOutTimestamp = new Timestamp(Convert.ToInt64((prevSwapOut.TimeMSec - firstTimeStamp) * 1000000));
+                            cswap.waitDuration = cswap.swapInTime - prevSwapOut.TimeMSec;
+                            cswap.prevSwapOutStack = prevSwapOut.stackFrame.stack;
                         }
                     }
 
                     if (lastReady.TryGetValue(linuxEvent.CpuNumber, out cswap) && cswap != null)
                     {
                         lastReady[linuxEvent.CpuNumber] = null;
+                        cswap.readyDuration = linuxEvent.TimeMSec - cswap.readyTime;
                     }
                     else 
                     {
                         cswap = new ContextSwapEvent();
+                        cswap.readyTimestamp = new Timestamp(Convert.ToInt64((linuxEvent.TimeMSec - firstTimeStamp) * 1000000));
                     }
 
-                    cswap.swapOutEvent = linuxEvent;
+                    cswap.swapInTime = linuxEvent.TimeMSec;
+                    cswap.swapInTimestamp = new Timestamp(Convert.ToInt64((linuxEvent.TimeMSec - firstTimeStamp) * 1000000));
+                    cswap.prevSwapOutTimestamp = Timestamp.Zero;
+                    cswap.waitDuration = linuxEvent.TimeMSec - firstTimeStamp;
+                    cswap.runDuration = lastTimeStamp - linuxEvent.TimeMSec;
+                    cswap.cpuNumber = linuxEvent.CpuNumber;
                     lastSwapOut[linuxEvent.CpuNumber] = cswap;
                     lastSwapOutThread[threadId] = linuxEvent;
                     contextSwaps.Add(cswap);
                 }
                 else if (linuxEvent.Kind == EventKind.Wakeup)
                 {
-                    ContextSwapEvent cswap = new ContextSwapEvent();
-                    cswap.readyEvent = linuxEvent;
+                    cswap = new ContextSwapEvent();
+                    cswap.readyThreadId = linuxEvent.ThreadID;
+                    cswap.readyProcess = string.Format("{0} ({1})", linuxEvent.Command, linuxEvent.ProcessID);
+                    cswap.readyTime = linuxEvent.TimeMSec;
+                    cswap.readyTimestamp = new Timestamp(Convert.ToInt64((linuxEvent.TimeMSec - firstTimeStamp) * 1000000));
+                    cswap.readyStack = linuxEvent.stackFrame.stack;
+                    cswap.newThreadId = linuxEvent.schedWakeup.ProcessId;
+                    cswap.newProcess = string.Format("{0} ({1})", linuxEvent.schedWakeup.Comm, linuxEvent.schedWakeup.ProcessId);
                     lastReady[linuxEvent.schedWakeup.TargetCpu] = cswap;
                 }
             }
 
-            var baseProjection = Projection.CreateUsingFuncAdaptor(new Func<int,int>(i => i));
+            // For idle and unknown cswaps (often idle as well) clear out the wait and run times
+            foreach (ContextSwapEvent cswap in contextSwaps)
+            {
+                if (cswap.newThreadId == 0 || cswap.newThreadId == -1)
+                {
+                    cswap.waitDuration = 0;
+                    cswap.runDuration = 0;
+                }
+            }
+
+            var baseProjection = Projection.Index(contextSwaps);
 
             // Constant columns
-            var swapInTimeProjection = baseProjection.Compose(s => new Timestamp(Convert.ToInt64((contextSwaps[s].swapOutEvent.TimeMSec - firstTimeStamp) * 1000000)));
-            var readyTimeProjection = baseProjection.Compose(s => new Timestamp(Convert.ToInt64(((contextSwaps[s].readyEvent != null ? contextSwaps[s].readyEvent.TimeMSec : contextSwaps[s].swapOutEvent.TimeMSec) - firstTimeStamp) * 1000000)));
-            var prevSwapOutTimeProjection = baseProjection.Compose(s => new Timestamp(Convert.ToInt64((contextSwaps[s].prevSwapOutThreadEvent != null ? contextSwaps[s].prevSwapOutThreadEvent.TimeMSec - firstTimeStamp : 0) * 1000000)));
+            var swapInTimeProjection = baseProjection.Compose(s => s.swapInTimestamp);
+            var readyTimeProjection = baseProjection.Compose(s => s.readyTimestamp);
+            var prevSwapOutTimeProjection = baseProjection.Compose(s => s.prevSwapOutTimestamp);
             var countProjection = baseProjection.Compose(s => 1);
-            var waitProjection = baseProjection.Compose(s => (contextSwaps[s].swapOutEvent.TimeMSec - (contextSwaps[s].prevSwapOutThreadEvent != null ? contextSwaps[s].prevSwapOutThreadEvent.TimeMSec : firstTimeStamp)) * 1000);
-            var readyProjection = baseProjection.Compose(s => (contextSwaps[s].readyEvent != null ? (contextSwaps[s].swapOutEvent.TimeMSec - contextSwaps[s].readyEvent.TimeMSec) : 0) * 1000);
-            var runProjection = baseProjection.Compose(s => ((contextSwaps[s].nextSwapOutEvent != null ? contextSwaps[s].nextSwapOutEvent.TimeMSec : lastTimeStamp) - contextSwaps[s].swapOutEvent.TimeMSec) * 1000);
-            var newThreadIdProjection = baseProjection.Compose(s => contextSwaps[s].nextSwapOutEvent != null ? contextSwaps[s].nextSwapOutEvent.ThreadID : -1);
-            var newProcessProjection = baseProjection.Compose(s => contextSwaps[s].nextSwapOutEvent != null ? string.Format("{0} ({1})", contextSwaps[s].nextSwapOutEvent.Command, contextSwaps[s].nextSwapOutEvent.ProcessID) : "Unknown (-1)");
-            var cpuProjection = baseProjection.Compose(s => contextSwaps[s].swapOutEvent.CpuNumber);
-            var readyThreadIdProjection = baseProjection.Compose(s => contextSwaps[s].readyEvent != null ? contextSwaps[s].readyEvent.ThreadID : -1);
-            var readyProcessProjection = baseProjection.Compose(s => contextSwaps[s].readyEvent != null ? string.Format("{0} ({1})", contextSwaps[s].readyEvent.Command, contextSwaps[s].readyEvent.ProcessID) : "Unknown (-1)");
+            var waitProjection = baseProjection.Compose(s => s.waitDuration * 1000);
+            var readyProjection = baseProjection.Compose(s => s.readyDuration * 1000);
+            var runProjection = baseProjection.Compose(s => s.runDuration * 1000);
+            var newThreadIdProjection = baseProjection.Compose(s => s.newThreadId);
+            var newProcessProjection = baseProjection.Compose(s => s.newProcess);
+            var newThreadStackProjection = baseProjection.Compose(s => s.prevSwapOutStack);
+            var cpuProjection = baseProjection.Compose(s => s.cpuNumber);
+            var readyThreadIdProjection = baseProjection.Compose(s => s.readyThreadId);
+            var readyProcessProjection = baseProjection.Compose(s => s.readyProcess);
+            var readyThreadStackProjection = baseProjection.Compose(s => s.readyStack);
 
-            IProjection<int, int> countProj = SequentialGenerator.Create(
-                contextSwaps.Count,
-                Projection.Constant(1),
-                Projection.Constant(0));
+            // For calculating %cpu
+            var runTimeProjection = baseProjection.Compose(s => new TimeRange(s.swapInTimestamp, new TimestampDelta(Convert.ToInt64(s.runDuration * 1000000))));
+            var cpuPercentProj = Projection.ClipTimeToVisibleDomain.CreatePercent(runTimeProjection);
 
             //
             // Table Configurations describe how your table should be presented to the user: 
@@ -248,6 +335,7 @@ namespace PerfDataExtensions.Tables
                   readyColumn,
                   waitColumn,
                   runColumn,
+                  cpuPctColumn,
                   TableConfiguration.GraphColumn,
                   countColumn
                 },
@@ -278,10 +366,11 @@ namespace PerfDataExtensions.Tables
                 .AddColumn(newProcessColumn, newProcessProjection)
                 .AddColumn(readyThreadIdColumn, readyThreadIdProjection)
                 .AddColumn(readyProcessColumn, readyProcessProjection)
+                .AddColumn(cpuPctColumn, cpuPercentProj)
             ;
 
-            table.AddHierarchicalColumn(newThreadStackColumn, baseProjection.Compose((i) => contextSwaps[i].prevSwapOutThreadEvent != null ? contextSwaps[i].prevSwapOutThreadEvent.stackFrame.stack : new string[] { }), new ArrayAccessProvider<string>());
-            table.AddHierarchicalColumn(readyThreadStackColumn, baseProjection.Compose((i) => contextSwaps[i].readyEvent != null ? contextSwaps[i].readyEvent.stackFrame.stack : new string[] { }), new ArrayAccessProvider<string>());
+            table.AddHierarchicalColumn(newThreadStackColumn, newThreadStackProjection, new ArrayAccessProvider<string>());
+            table.AddHierarchicalColumn(readyThreadStackColumn, readyThreadStackProjection, new ArrayAccessProvider<string>());
 
         }
     }
