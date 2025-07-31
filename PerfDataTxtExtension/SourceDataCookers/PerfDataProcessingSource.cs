@@ -82,4 +82,57 @@ namespace PerfDataProcessingSource
                 processorEnvironment);
         }
     }
+
+    [ProcessingSource(
+        "{d95144e7-b7d3-4816-84fd-ea85ff68e97a}",   // The GUID must be unique for your Custom Data Source. You can use Visual Studio's Tools -> Create Guid… tool to create a new GUID
+        "Linux Perf Txt Data (Gzip)",                               // The Custom Data Source MUST have a name
+        @"Linux perf.data.txt.gz parser")]            // The Custom Data Source MUST have a description
+    [FileDataSource(
+        ".gz",                                              // A file extension is REQUIRED
+        "Linux perf.data.txt.gz parser")]  // A description is OPTIONAL. The description is what appears in the file open menu to help users understand what the file type actually is. 
+
+    public class PerfDataProcessingSourceGzip
+        : ProcessingSource
+    {
+        private IApplicationEnvironment applicationEnvironment;
+
+        public override ProcessingSourceInfo GetAboutInfo()
+        {
+            var info = ProcessingSourceInfoGenerator.GetEmpty();
+            info.ProjectInfo = new ProjectInfo() { Uri = "https://aka.ms/linuxperftools" };
+            return info;
+        }
+
+        protected override void SetApplicationEnvironmentCore(IApplicationEnvironment applicationEnvironment)
+        {
+            //
+            // Saves the given application environment into this instance
+            //
+
+            this.applicationEnvironment = applicationEnvironment;
+        }
+
+        protected override bool IsDataSourceSupportedCore(IDataSource dataSource)
+        {
+            return dataSource.IsFile() && Path.GetFileName(dataSource.Uri.LocalPath).EndsWith("perf.data.txt.gz", StringComparison.OrdinalIgnoreCase);
+        }
+
+        protected override ICustomDataProcessor CreateProcessorCore(
+            IEnumerable<IDataSource> dataSources,
+            IProcessorEnvironment processorEnvironment,
+            ProcessorOptions options)
+        {
+            //
+            // Create a new instance implementing ICustomDataProcessor here to process the specified data sources.
+            // Note that you can have more advanced logic here to create different processors if you would like based on the file, or any other criteria.
+            // You are not restricted to always returning the same type from this method.
+            //
+
+            return new PerfDataCustomDataProcessor(
+                dataSources.Select(x => x.Uri.LocalPath).ToArray(),
+                options,
+                this.applicationEnvironment,
+                processorEnvironment);
+        }
+    }
 }
