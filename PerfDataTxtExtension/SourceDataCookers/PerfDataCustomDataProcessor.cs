@@ -16,6 +16,8 @@ using PerfDataExtensions.Tables;
 using PerfDataExtensions.DataOutputTypes;
 using Microsoft.Diagnostics.Symbols;
 using System.Reflection;
+using System.IO.Compression;
+using System.Reflection.PortableExecutable;
 
 namespace PerfDataProcessingSource
 {
@@ -140,9 +142,17 @@ namespace PerfDataProcessingSource
                     traceStartTime = DateTime.FromFileTimeUtc(traceStartTime.ToFileTimeUtc());
                 }
 
+                Stream fileStream = File.OpenRead(path);
+                Stream stream = fileStream;
+                if (path.EndsWith(".gz", StringComparison.OrdinalIgnoreCase))
+                {
+                    GZipStream zip = new GZipStream(fileStream, CompressionMode.Decompress, true);
+                    stream = zip;
+                }
+
                 LinuxPerfScriptEventParser parser = new LinuxPerfScriptEventParser();
                 var events = new List<PerfDataLinuxEvent>();
-                foreach (var linuxEvent in parser.ParseSkippingPreamble(path))
+                foreach (var linuxEvent in parser.ParseSkippingPreamble(stream))
                 {
                     PerfDataStackFrame stackFrame = stackCache.LookupStack(linuxEvent.CallerStacks);
                     PerfDataLinuxEvent perfDataLinuxEvent = new PerfDataLinuxEvent(linuxEvent, stackFrame);

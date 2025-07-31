@@ -167,6 +167,11 @@ namespace PerfDataExtensions.Tables
                 new ColumnMetadata(new Guid("{8f571410-1057-4821-89c2-5262bf2d94a5}"), "CPU"),
                 new UIHints { Width = 80, });
 
+        private static readonly ColumnConfiguration completionCpuColumn =
+            new ColumnConfiguration(
+                new ColumnMetadata(new Guid("{866c01b4-8418-45a4-b7a3-a39919356908}"), "CompletionCPU"),
+                new UIHints { Width = 80, });
+
         private static readonly ColumnConfiguration deviceColumn =
             new ColumnConfiguration(
                 new ColumnMetadata(new Guid("{0ab19e95-f913-4350-94b6-1b70feb95deb}"), "Device"),
@@ -308,6 +313,7 @@ namespace PerfDataExtensions.Tables
             var endTimeProjection = baseProjection.Compose(s => new Timestamp(Convert.ToInt64(((diskIoEvents[s].diskIoComplete != null ? diskIoEvents[s].diskIoComplete.TimeMSec : diskIoEvents[s].diskIoInit.TimeMSec) - firstTimeStamp) * 1000000)));
             var durationProjection = baseProjection.Compose(s => ((diskIoEvents[s].diskIoComplete != null ? diskIoEvents[s].diskIoComplete.TimeMSec : diskIoEvents[s].diskIoInit.TimeMSec) - (diskIoEvents[s].diskIoInit != null ? diskIoEvents[s].diskIoInit.TimeMSec : diskIoEvents[s].diskIoComplete.TimeMSec)) * 1000);
             var cpuProjection = baseProjection.Compose(s => diskIoEvents[s].diskIoInit != null ? diskIoEvents[s].diskIoInit.CpuNumber : diskIoEvents[s].diskIoComplete.CpuNumber);
+            var completionCpuProjection = baseProjection.Compose(s => diskIoEvents[s].diskIoComplete != null ? diskIoEvents[s].diskIoComplete.CpuNumber : diskIoEvents[s].diskIoInit.CpuNumber);
             var countProjection = baseProjection.Compose(s => 1);
             var threadIdProjection = baseProjection.Compose(s => diskIoEvents[s].diskIoInit != null ? diskIoEvents[s].diskIoInit.ThreadID : diskIoEvents[s].diskIoComplete.ThreadID);
             var processIdProjection = baseProjection.Compose(s => diskIoEvents[s].diskIoInit != null ? diskIoEvents[s].diskIoInit.ProcessID : diskIoEvents[s].diskIoInit.ProcessID);
@@ -371,6 +377,7 @@ namespace PerfDataExtensions.Tables
                 .AddColumn(endTimeColumn, endTimeProjection)
                 .AddColumn(durationColumn, durationProjection)
                 .AddColumn(cpuColumn, cpuProjection)
+                .AddColumn(completionCpuColumn, completionCpuProjection)
                 .AddColumn(countColumn, countProjection)
                 .AddColumn(threadIdColumn, threadIdProjection)
                 .AddColumn(processIdColumn, processIdProjection)
