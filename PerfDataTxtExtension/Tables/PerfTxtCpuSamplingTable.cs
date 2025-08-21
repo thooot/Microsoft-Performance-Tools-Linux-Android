@@ -471,10 +471,10 @@ namespace PerfDataExtensions.Tables
                 .AddColumn(processIdColumn, processIdProjection)
                 .AddColumn(processColumn, processProjection)
                 .AddColumn(processNameColumn, processNameProjection)
-                .AddColumn(weightPctColumn, weightPercentProj)
                 .AddColumn(viewportClippedStartTimeCol, viewportClippedStartTimeProj)
                 .AddColumn(viewportClippedEndTimeCol, viewportClippedEndTimeProj)
                 .AddColumn(clippedWeightCol, clippedWeightProj)
+                .AddColumn(weightPctColumn, weightPercentProj)
                 .AddColumn(cpuColumn, cpuProjection)
             ;
 

@@ -178,6 +178,7 @@ namespace PerfDataExtensions.Tables
             Dictionary<int, ContextSwapEvent> lastReady = new Dictionary<int, ContextSwapEvent>();
             Dictionary<Tuple<int, int>, PerfDataLinuxEvent> lastSwapOutThread = new Dictionary<Tuple<int, int>, PerfDataLinuxEvent>();
             List<ContextSwapEvent> contextSwaps = new List<ContextSwapEvent>();
+            bool seenCSwap = false;
 
             foreach (PerfDataLinuxEvent linuxEvent in firstPerfDataTxtLogParsed)
             {
@@ -269,6 +270,7 @@ namespace PerfDataExtensions.Tables
                     lastSwapOut[linuxEvent.CpuNumber] = cswap;
                     lastSwapOutThread[threadId] = linuxEvent;
                     contextSwaps.Add(cswap);
+                    seenCSwap = true;
                 }
                 else if (linuxEvent.Kind == EventKind.Wakeup)
                 {
@@ -284,7 +286,7 @@ namespace PerfDataExtensions.Tables
                 }
             }
 
-            if (contextSwaps.Count == 0) { return; }
+            if (seenCSwap == false) { return; }
 
             // For idle and unknown cswaps (often idle as well) clear out the wait and run times
             foreach (ContextSwapEvent cswap in contextSwaps)

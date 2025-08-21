@@ -132,7 +132,7 @@ namespace PerfDataExtensions.Tables
             var baseProjection = Projection.Index(firstPerfDataTxtLogParsed);
 
             // Constant columns
-            var timeStampProjection = baseProjection.Compose(s => new Timestamp(Convert.ToInt64(s.TimeMSec - firstTimeStamp)));
+            var timeStampProjection = baseProjection.Compose(s => new Timestamp(Convert.ToInt64((s.TimeMSec - firstTimeStamp) * 1000000)));
             var cpuProjection = baseProjection.Compose(s => s.CpuNumber);
             var countProjection = baseProjection.Compose(s => 1);
             var ipAddressProjection = baseProjection.Compose(s => s.stackFrame.stackFrame.Address);
