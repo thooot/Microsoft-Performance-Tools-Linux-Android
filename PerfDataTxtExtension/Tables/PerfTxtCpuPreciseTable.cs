@@ -79,6 +79,11 @@ namespace PerfDataExtensions.Tables
                 new ColumnMetadata(new Guid("{e9167afc-f5e9-452b-8691-aafe23d56804}"), "Swap In Time"),
                 new UIHints { Width = 80, });
 
+        private static readonly ColumnConfiguration swapOutTimeColumn =
+            new ColumnConfiguration(
+                new ColumnMetadata(new Guid("{757aa5ee-d5cf-4529-966c-3fb3f38783f0}"), "Swap Out Time"),
+                new UIHints { Width = 80, });
+
         private static readonly ColumnConfiguration readyTimeColumn =
             new ColumnConfiguration(
                 new ColumnMetadata(new Guid("{0d83ad27-3afc-47d8-9000-f20500d05b65}"), "Ready Time"),
@@ -279,6 +284,8 @@ namespace PerfDataExtensions.Tables
                 }
             }
 
+            if (contextSwaps.Count == 0) { return; }
+
             // For idle and unknown cswaps (often idle as well) clear out the wait and run times
             foreach (ContextSwapEvent cswap in contextSwaps)
             {
@@ -293,6 +300,7 @@ namespace PerfDataExtensions.Tables
 
             // Constant columns
             var swapInTimeProjection = baseProjection.Compose(s => s.swapInTimestamp);
+            var swapOutTimeProjection = baseProjection.Compose(s => s.swapInTimestamp + new TimestampDelta(Convert.ToInt64(s.runDuration * 1000000)));
             var readyTimeProjection = baseProjection.Compose(s => s.readyTimestamp);
             var prevSwapOutTimeProjection = baseProjection.Compose(s => s.prevSwapOutTimestamp);
             var countProjection = baseProjection.Compose(s => 1);
@@ -308,8 +316,15 @@ namespace PerfDataExtensions.Tables
             var readyThreadStackProjection = baseProjection.Compose(s => s.readyStack);
 
             // For calculating %cpu
-            var runTimeProjection = baseProjection.Compose(s => new TimeRange(s.swapInTimestamp, new TimestampDelta(Convert.ToInt64(s.runDuration * 1000000))));
-            var cpuPercentProj = Projection.ClipTimeToVisibleDomain.CreatePercent(runTimeProjection);
+            IProjection<int, Timestamp> viewportClippedStartTimeProj = Projection.ClipTimeToVisibleDomain.Create(swapInTimeProjection);
+            IProjection<int, Timestamp> viewportClippedEndTimeProj = Projection.ClipTimeToVisibleDomain.Create(swapOutTimeProjection);
+
+            IProjection<int, TimestampDelta> clippedWeightProj = Projection.Select(
+                viewportClippedEndTimeProj,
+                viewportClippedStartTimeProj,
+                new ReduceTimeSinceLastDiff());
+
+            IProjection<int, double> cpuPercentProj = Projection.VisibleDomainRelativePercent.Create(clippedWeightProj);
 
             //
             // Table Configurations describe how your table should be presented to the user: 
@@ -340,8 +355,9 @@ namespace PerfDataExtensions.Tables
                   countColumn
                 },
             };
-            contextSwapsByProcessNewStackReadyStackConfig.AddColumnRole(ColumnRole.EndTime, swapInTimeColumn);
-            contextSwapsByProcessNewStackReadyStackConfig.AddColumnRole(ColumnRole.Duration, waitColumn);
+            contextSwapsByProcessNewStackReadyStackConfig.AddColumnRole(ColumnRole.StartTime, swapInTimeColumn);
+            contextSwapsByProcessNewStackReadyStackConfig.AddColumnRole(ColumnRole.EndTime, swapOutTimeColumn);
+            contextSwapsByProcessNewStackReadyStackConfig.AddColumnRole(ColumnRole.Duration, runColumn);
             contextSwapsByProcessNewStackReadyStackConfig.AddColumnRole(ColumnRole.ResourceId, newThreadIdColumn);
 
             //
@@ -355,6 +371,7 @@ namespace PerfDataExtensions.Tables
                 .SetDefaultTableConfiguration(contextSwapsByProcessNewStackReadyStackConfig)
                 .SetRowCount(contextSwaps.Count)
                 .AddColumn(swapInTimeColumn, swapInTimeProjection)
+                .AddColumn(swapOutTimeColumn, swapOutTimeProjection)
                 .AddColumn(readyTimeColumn, readyTimeProjection)
                 .AddColumn(prevSwapOutTimeColumn, prevSwapOutTimeProjection)
                 .AddColumn(cpuColumn, cpuProjection)
