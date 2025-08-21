@@ -190,6 +190,8 @@ namespace PerfDataTxtExtension.Tables
                 }
             }
 
+            if (irqEvents.Count == 0) { return; }
+
             var baseProjection = Projection.CreateUsingFuncAdaptor(new Func<int, int>(i => i));
 
             // Constant columns

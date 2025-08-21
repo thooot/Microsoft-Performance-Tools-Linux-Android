@@ -265,6 +265,8 @@ namespace PerfDataExtensions.Tables
                 }
             }
 
+            if (diskIoEvents.Count == 0) { return; }
+
             // Calculate queue depth at init/complete for IOs that we matched
             Dictionary<Tuple<uint, uint>, int> deviceQueueDepth = new Dictionary<Tuple<uint, uint>, int>();
             int index = 0;
